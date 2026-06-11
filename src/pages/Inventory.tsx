@@ -223,9 +223,8 @@ export default function Inventory() {
         const cost = parseFloat(productForm.cost_price);
         const sale = calcSalePrice(productForm);
         const stock = parseInt(productForm.current_stock);
-        const weight = parseFloat(productForm.weight_kg) || 0;
         if (!productForm.name.trim() || !productForm.agency_id || isNaN(cost) || isNaN(sale) || sale <= 0 || isNaN(stock)) return;
-        const data = { name: productForm.name.trim(), agency_id: productForm.agency_id, cost_price: cost, default_price: sale, current_stock: stock, weight_kg: weight };
+        const data = { name: productForm.name.trim(), agency_id: productForm.agency_id, cost_price: cost, default_price: sale, current_stock: stock, weight_kg: parseFloat(productForm.weight_kg) || 0 };
         if (productModal.mode === 'add') addProduct(data);
         else if (productModal.editing) updateProduct(productModal.editing.id, data);
         setProductModal({ open: false, mode: 'add' });
@@ -261,7 +260,6 @@ export default function Inventory() {
 
         const qty = parseInt(restockQty) || 0;
         const base = parseFloat(restockBasePrice) || 0;
-        const weight = parseFloat(restockWeight) || 0;
         const unloading = parseFloat(restockUnloading) || 0;
 
         const baseTotal = qty * base;
