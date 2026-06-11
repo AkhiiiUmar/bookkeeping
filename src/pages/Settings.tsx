@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
 import {
     Settings as SettingsIcon, Bell, Mail, LogOut,
     Trash2, AlertTriangle, ShieldAlert, CheckCircle, RefreshCw, Send,
-    Lock, Eye, EyeOff
+    Lock, Eye, EyeOff, Download, Upload, HardDrive, FileJson
 } from 'lucide-react';
 
 interface ReminderSettings {
@@ -18,6 +18,100 @@ export default function Settings() {
     const shopkeepers = useStore(s => s.shopkeepers);
     const invoices = useStore(s => s.invoices);
     const resetAllData = useStore(s => s.resetAllData);
+    const store = useStore();
+
+    // ── Backup & Restore State ───────────────────────────────
+    const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [importMessage, setImportMessage] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    function handleExport() {
+        const backup = {
+            exportedAt: new Date().toISOString(),
+            version: '1.0',
+            data: {
+                shopkeepers: store.shopkeepers,
+                agencies: store.agencies,
+                products: store.products,
+                orders: store.orders,
+                invoices: store.invoices,
+                payments: store.payments,
+                dailyExpenses: store.dailyExpenses,
+                agencyPayments: store.agencyPayments,
+            }
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `distribution-pos-backup-${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsImporting(true);
+        setImportStatus('idle');
+        setImportMessage('');
+
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+
+            // Validate structure
+            if (!parsed.data || !parsed.version) {
+                throw new Error('Invalid backup file. Please use a file exported from this app.');
+            }
+
+            const { data } = parsed;
+            const required = ['shopkeepers', 'agencies', 'products', 'orders', 'invoices', 'payments', 'dailyExpenses', 'agencyPayments'];
+            for (const key of required) {
+                if (!Array.isArray(data[key])) throw new Error(`Missing or invalid field: ${key}`);
+            }
+
+            // Restore to local state immediately
+            useStore.setState({
+                shopkeepers: data.shopkeepers,
+                agencies: data.agencies,
+                products: data.products,
+                orders: data.orders,
+                invoices: data.invoices,
+                payments: data.payments,
+                dailyExpenses: data.dailyExpenses,
+                agencyPayments: data.agencyPayments,
+            });
+
+            // Re-sync everything to Supabase in background
+            const q = store.queueOrSync;
+            const allUpserts: Promise<void>[] = [
+                ...data.shopkeepers.map((r: any) => q({ table: 'shopkeepers', action: 'insert', payload: r })),
+                ...data.agencies.map((r: any) => q({ table: 'agencies', action: 'insert', payload: r })),
+                ...data.products.map((r: any) => q({ table: 'products', action: 'insert', payload: r })),
+                ...data.payments.map((r: any) => q({ table: 'payments', action: 'insert', payload: r })),
+                ...data.dailyExpenses.map((r: any) => q({ table: 'daily_expenses', action: 'insert', payload: r })),
+                ...data.agencyPayments.map((r: any) => q({ table: 'agency_payments', action: 'insert', payload: r })),
+                ...data.invoices.map((r: any) => q({ table: 'invoices', action: 'insert', payload: { id: r.id, shopkeeper_id: r.shopkeeper_id, date: r.date, source: r.source, order_id: r.order_id || null, total_amount: r.total_amount } })),
+                ...data.invoices.flatMap((r: any) => r.items.map((ii: any) => q({ table: 'invoice_items', action: 'insert', payload: { invoice_id: r.id, product_name: ii.product_name, quantity: ii.quantity, price: ii.price, amount: ii.amount } }))),
+                ...data.orders.map((r: any) => q({ table: 'orders', action: 'insert', payload: { id: r.id, shopkeeper_id: r.shopkeeper_id, date: r.date, status: r.status } })),
+                ...data.orders.flatMap((r: any) => r.items.map((oi: any) => q({ table: 'order_items', action: 'insert', payload: { order_id: r.id, product_id: oi.product_id, quantity: oi.quantity, price: oi.price } }))),
+            ];
+            await Promise.allSettled(allUpserts);
+
+            const counts = `${data.shopkeepers.length} shopkeepers, ${data.agencies.length} agencies, ${data.products.length} products, ${data.invoices.length} invoices, ${data.payments.length} payments`;
+            setImportStatus('success');
+            setImportMessage(`✅ Restore complete! Imported: ${counts}. Data is now live.`);
+        } catch (err: any) {
+            setImportStatus('error');
+            setImportMessage(err.message || 'Failed to import backup file.');
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    }
 
     // Theme is permanently dark
 
@@ -175,6 +269,90 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground">
                         Manage theme preferences, automated overdue payment reminders, secure session logouts, and database backups.
                     </p>
+                </div>
+            </div>
+
+            {/* ── Backup & Restore Card ────────────────────────── */}
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-1">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center border border-indigo-100 dark:border-indigo-900">
+                        <HardDrive className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-foreground text-base">Backup & Restore</h3>
+                        <p className="text-xs text-muted-foreground">Export all your data to a JSON file, or restore from a previous backup.</p>
+                    </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Export */}
+                    <div className="border border-border rounded-xl p-4 bg-muted/20 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <Download className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm font-bold text-foreground">Export Backup</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Downloads a <span className="font-mono font-semibold">.json</span> file containing all shopkeepers, agencies, products, invoices, payments, and expenses.
+                        </p>
+                        <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 font-mono">
+                            <span className="text-emerald-600 font-bold">{store.shopkeepers.length}</span> shopkeepers &nbsp;·&nbsp;
+                            <span className="text-indigo-600 font-bold">{store.invoices.length}</span> invoices &nbsp;·&nbsp;
+                            <span className="text-amber-600 font-bold">{store.products.length}</span> products
+                        </div>
+                        <button
+                            id="export-backup-btn"
+                            onClick={handleExport}
+                            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+                        >
+                            <FileJson className="w-4 h-4" />
+                            Download Backup File
+                        </button>
+                    </div>
+
+                    {/* Import / Restore */}
+                    <div className="border border-border rounded-xl p-4 bg-muted/20 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <Upload className="w-4 h-4 text-indigo-600" />
+                            <span className="text-sm font-bold text-foreground">Restore from Backup</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Upload a previously exported <span className="font-mono font-semibold">.json</span> backup file to restore all your data instantly.
+                        </p>
+
+                        {importStatus === 'success' && (
+                            <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 p-2.5 rounded-xl text-[11px] font-semibold">
+                                <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                {importMessage}
+                            </div>
+                        )}
+                        {importStatus === 'error' && (
+                            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 p-2.5 rounded-xl text-[11px] font-semibold">
+                                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                {importMessage}
+                            </div>
+                        )}
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json,application/json"
+                            onChange={handleImport}
+                            className="hidden"
+                            id="restore-file-input"
+                        />
+                        <button
+                            id="restore-backup-btn"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isImporting}
+                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+                        >
+                            {isImporting ? (
+                                <><RefreshCw className="w-4 h-4 animate-spin" /> Restoring...</>
+                            ) : (
+                                <><Upload className="w-4 h-4" /> Select Backup File</>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
