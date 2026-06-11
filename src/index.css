@@ -1,0 +1,438 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   FIGMA DESIGN TOKENS — Travel Nurse Color System
+   ============================================================
+   Base:          white #FFFFFF / black #000000
+   Gray-100:      #F5F5F5  (page background)
+   Gray-400:      #A4A7AE  (placeholder, disabled)
+   Gray-600:      #535862  (secondary text)
+   Gray-700:      #414651  (body text)
+   Gray-800:      #252937  (heading text)
+   Gray-900:      #181D27  (darkest text)
+
+   Brand-100:     #F4EBFF  (brand tint background)
+   Brand-600:     #7F56D9  (primary buttons)
+   Brand-700:     #6941C6  (primary hover)
+   Brand-900:     #42307D  (brand dark)
+
+   Error-600:     #D92D20
+   Success-500:   #17B26A
+   Success-800:   #079455
+   Blue-500:      #2E90FA
+   Indigo-600:    #444CE7
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Background layers */
+    --background:      0 0% 96.1%;        /* #F5F5F5 - Gray 100 */
+    --surface:         0 0% 100%;         /* #FFFFFF - white cards */
+    --foreground:      222 23% 15%;       /* #181D27 - Gray 900 */
+
+    /* Card / Container */
+    --card:            0 0% 100%;         /* #FFFFFF */
+    --card-foreground: 222 23% 15%;       /* #181D27 */
+
+    /* Popover */
+    --popover:         0 0% 100%;
+    --popover-foreground: 222 23% 15%;
+
+    /* Primary brand — Brand 600 */
+    --primary:         265 57% 56%;       /* #7F56D9 */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — Gray 100 */
+    --secondary:       0 0% 96.1%;        /* #F5F5F5 */
+    --secondary-foreground: 218 13% 30%; /* #414651 */
+
+    /* Muted / Subtle */
+    --muted:           0 0% 96.1%;        /* #F5F5F5 */
+    --muted-foreground: 220 9% 60%;       /* #A4A7AE */
+
+    /* Accent — Brand tint */
+    --accent:          270 100% 97%;      /* #F4EBFF Brand-100 */
+    --accent-foreground: 265 57% 56%;    /* #7F56D9 */
+
+    /* Destructive */
+    --destructive:     3 72% 50%;         /* #D92D20 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border:          0 0% 91%;          /* #E8E8E8 subtle border */
+    --input:           0 0% 91%;
+    --ring:            265 57% 56%;       /* #7F56D9 */
+
+    /* Border radius — Figma: 24px on sidebar, 12px on cards, 8px on inputs */
+    --radius:          0.75rem;           /* 12px default card radius */
+    --radius-lg:       1.5rem;            /* 24px sidebar/panel radius */
+    --radius-xl:       2rem;              /* 32px large pill/modal */
+    --radius-sm:       0.5rem;            /* 8px input/small element */
+    --radius-pill:     9999px;            /* pill badges */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #F5F5F5;
+    color: #181D27;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply antialiased;
+    line-height: 1.5;
+  }
+
+  /* ── Typography scale ─────────────────────────── */
+  h1, h2, h3, h4, h5, h6 {
+    color: #181D27;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  p, span, li {
+    color: #414651;
+  }
+
+  /* ── Consistent scrollbar ─────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: #A4A7AE;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #535862; }
+}
+
+/* ============================================================
+   COMPONENT PRIMITIVES — use these everywhere
+   ============================================================ */
+@layer components {
+
+  /* Cards */
+  .card {
+    background: #FFFFFF;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .card-sm {
+    background: #FFFFFF;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  /* Input fields */
+  .input-field {
+    background: #FFFFFF;
+    border: 1px solid #E8E8E8;
+    border-radius: 8px;
+    padding: 0.5rem 0.875rem;
+    color: #181D27;
+    font-size: 0.875rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-field::placeholder { color: #A4A7AE; }
+  .input-field:focus { border-color: #7F56D9; box-shadow: 0 0 0 3px rgba(127,86,217,0.12); }
+
+  /* Primary button */
+  .btn-primary {
+    background: #7F56D9;
+    color: #FFFFFF;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover { background: #6941C6; }
+
+  /* Secondary / Ghost button */
+  .btn-secondary {
+    background: #FFFFFF;
+    color: #414651;
+    border: 1px solid #E8E8E8;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-secondary:hover { background: #F5F5F5; border-color: #A4A7AE; }
+
+  /* Pills / Badges */
+  .badge {
+    border-radius: 9999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .badge-brand  { background: #F4EBFF; color: #6941C6; }
+  .badge-success { background: #DCFCE7; color: #079455; }
+  .badge-error   { background: #FEE2E2; color: #D92D20; }
+  .badge-info    { background: #DBEAFE; color: #2E90FA; }
+  .badge-gray    { background: #F5F5F5; color: #535862; }
+
+  /* Section header row */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #181D27;
+  }
+
+  /* Table styles */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .data-table th {
+    background: #F5F5F5;
+    color: #535862;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #E8E8E8;
+  }
+  .data-table td {
+    padding: 0.875rem 1rem;
+    color: #414651;
+    border-bottom: 1px solid #F5F5F5;
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: #FAFAFA; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* Stat card */
+  .stat-card {
+    background: #FFFFFF;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #535862;
+    margin-bottom: 0.25rem;
+  }
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #181D27;
+  }
+  .stat-sub {
+    font-size: 0.75rem;
+    color: #A4A7AE;
+    margin-top: 0.25rem;
+  }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid #E8E8E8; }
+
+  /* Select / Dropdown */
+  select.input-field { background-image: none; cursor: pointer; }
+}
+
+/* ============================================================
+   GLOBAL OVERRIDES — Enforce Brand Purple Design System
+   
+   These rules override any hardcoded Tailwind color classes
+   across all pages to achieve a consistent light mode UI.
+   ============================================================ */
+
+/* ── PRIMARY BUTTON — Brand-600 with glow ───────────────── */
+/* Catch all the purple/indigo/emerald/slate primary buttons */
+button.bg-indigo-600,
+button.bg-indigo-650,
+a.bg-indigo-600,
+button.bg-emerald-600,
+button.bg-emerald-605,
+button.bg-slate-800 {
+  background: #7F56D9 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 3px rgba(127,86,217,0.3), 0 0 0 0px rgba(127,86,217,0.2) !important;
+  border: 1px solid #6941C6 !important;
+  transition: background 0.15s, box-shadow 0.15s !important;
+}
+button.bg-indigo-600:hover,
+button.bg-indigo-650:hover,
+a.bg-indigo-600:hover,
+button.bg-emerald-600:hover,
+button.bg-emerald-605:hover,
+button.bg-slate-800:hover {
+  background: #6941C6 !important;
+  box-shadow: 0 4px 14px rgba(127,86,217,0.45), 0 0 0 3px rgba(127,86,217,0.15) !important;
+}
+
+/* ── SECONDARY / OUTLINE BUTTON ─────────────────────────── */
+button.bg-card,
+button.border-border {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E8E8 !important;
+  color: #414651 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+}
+button.bg-card:hover,
+button.border-border:hover {
+  background: #F5F5F5 !important;
+  border-color: #A4A7AE !important;
+}
+
+/* ── INNER NESTED CARDS — always white ──────────────────── */
+/* Nested cards inside outer containers should be white not gray */
+.bg-slate-50\/50,
+.bg-slate-50,
+[class*="bg-slate-50"] {
+  background-color: #FFFFFF !important;
+}
+/* Remove dark remnants from card elements */
+[class*="dark:bg-slate-9"],
+[class*="dark:bg-slate-8"],
+[class*="dark:bg-emerald-9"],
+[class*="dark:bg-emerald-8"],
+[class*="dark:bg-indigo-9"] {
+  background-color: transparent !important;
+}
+
+/* ── TEXT COLOR OVERRIDES — ensure dark text on light bg ── */
+/* Any text that was being set to white on gray cards */
+[class*="dark:text-"] {
+  color: inherit;
+}
+
+/* ── STATUS BADGES / PILLS ──────────────────────────────── */
+/* Make gray muted pills more visible */
+.bg-muted {
+  background: #F5F5F5 !important;
+}
+.text-muted-foreground {
+  color: #535862 !important;
+}
+
+/* ── CARD BACKGROUNDS ───────────────────────────────────── */
+.bg-card {
+  background: #FFFFFF !important;
+}
+
+/* ── BORDER COLORS ──────────────────────────────────────── */
+.border-border {
+  border-color: #E8E8E8 !important;
+}
+
+/* ── INPUT BACKGROUNDS ──────────────────────────────────── */
+input, select, textarea {
+  background: #FFFFFF !important;
+  color: #181D27 !important;
+  border-color: #E8E8E8 !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #7F56D9 !important;
+  box-shadow: 0 0 0 3px rgba(127,86,217,0.12) !important;
+  outline: none !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #A4A7AE !important;
+}
+
+/* ── HEADINGS AND BODY TEXT ─────────────────────────────── */
+/* Prevent any dark: variants from making text white/invisible */
+h1, h2, h3, h4, h5, h6 {
+  color: #181D27 !important;
+}
+/* But allow explicitly colored text (green profit, red loss) to pass through */
+[class*="text-red-"], [class*="text-green-"],
+[class*="text-emerald-"], [class*="text-yellow-"],
+[class*="text-orange-"] {
+  /* These are semantic colors — allow them through */
+}
+/* Prevent white text on white cards */
+.text-white {
+  color: #FFFFFF;
+}
+
+/* ── PROGRESS BARS ──────────────────────────────────────── */
+.bg-indigo-500, .bg-indigo-600 {
+  background-color: #7F56D9 !important;
+}
+
+/* ── DARK BACKGROUNDS on MODAL HEADERS ─────────────────── */
+/* Override the dark modal headers */
+.bg-slate-900, .bg-slate-950, .bg-slate-800 {
+  background-color: #181D27 !important;  /* Dark, but it's intentional — modal headers */
+}
+/* Give them correct text color */
+.bg-slate-900 p, .bg-slate-900 span, .bg-slate-900 h1, .bg-slate-900 h2, .bg-slate-900 h3,
+.bg-slate-950 p, .bg-slate-950 span, .bg-slate-950 h1, .bg-slate-950 h2, .bg-slate-950 h3,
+.bg-slate-800 p, .bg-slate-800 span, .bg-slate-800 h1, .bg-slate-800 h2, .bg-slate-800 h3 {
+  color: #FFFFFF;
+}
+
+/* ── STAT ICON BACKGROUNDS ──────────────────────────────── */
+/* These gray icon squares should use brand tint */
+.bg-muted.rounded-lg,
+.bg-muted.rounded-xl,
+.bg-secondary.rounded-lg,
+.bg-secondary.rounded-xl {
+  background: #F4EBFF !important;
+}
+
+/* ── FILTER PILLS (Month/Year selectors) ────────────────── */
+.bg-muted.text-muted-foreground {
+  background: #F5F5F5 !important;
+  color: #535862 !important;
+  border: 1px solid #E8E8E8;
+}
+
+/* ── SELECTED FILTER PILLS — Brand Purple ───────────────── */
+.bg-indigo-600.text-white,
+.bg-emerald-600.text-white {
+  background: #7F56D9 !important;
+  color: #FFFFFF !important;
+  border-color: #7F56D9 !important;
+  box-shadow: 0 2px 8px rgba(127,86,217,0.3) !important;
+}
+
+/* ── TABLE HEADERS ──────────────────────────────────────── */
+.bg-muted th,
+thead.bg-muted th {
+  background: #F5F5F5 !important;
+  color: #535862 !important;
+}
