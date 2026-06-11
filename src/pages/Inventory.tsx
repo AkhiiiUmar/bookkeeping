@@ -74,6 +74,7 @@ interface BulkDeliveryItem {
     weight_kg: number;
     fbr_percent: number;
     include_builty: boolean;
+    include_cust_fbr: boolean;
 }
 
 export default function Inventory() {
@@ -369,6 +370,7 @@ export default function Inventory() {
             weight_kg: firstProd.weight_kg || 20,
             fbr_percent: activeTruckAgency?.fbr_percent ?? 2.5,
             include_builty: true,
+            include_cust_fbr: (activeTruckAgency?.fbr_percent ?? 0) > 0,
         }]);
     }
 
@@ -388,6 +390,7 @@ export default function Inventory() {
                     weight_kg: prod ? prod.weight_kg : 20,
                     fbr_percent: activeTruckAgency?.fbr_percent ?? 2.5,
                     include_builty: item.include_builty,
+                    include_cust_fbr: item.include_cust_fbr,
                 };
             }
             return { ...item, [field]: val };
@@ -435,7 +438,9 @@ export default function Inventory() {
             const companyFbrTotal = companyFbrPerCarton * item.quantity;
 
             // Customer FBR (what we absorb for shopkeepers — our internal cost only)
-            const customerFbrPerCarton = item.base_price * (customerFbrPct / 100);
+            // Only apply if include_cust_fbr is enabled for this row
+            const rawCustomerFbrPerCarton = item.base_price * (customerFbrPct / 100);
+            const customerFbrPerCarton = (item.include_cust_fbr ?? true) ? rawCustomerFbrPerCarton : 0;
             const customerFbrTotal = customerFbrPerCarton * item.quantity;
 
             // Agency ledger = base + company FBR (no logistics, no customer FBR)
@@ -1385,6 +1390,7 @@ export default function Inventory() {
                                                     <th className="px-3 py-2 w-28">Base Price</th>
                                                     <th className="px-3 py-2 w-16">Wt (kg)</th>
                                                     <th className="px-3 py-2 w-20">Cust FBR%</th>
+                                                    <th className="px-3 py-2 w-10 text-center text-amber-500" title="Include Customer FBR in unit cost for this product">FBR</th>
                                                     <th className="px-3 py-2 w-10 text-center text-indigo-500" title="Include Builty/Logistics cost for this product">Builty</th>
                                                     <th className="px-3 py-2 w-28 text-right text-indigo-600">Logistics/ctn</th>
                                                     <th className="px-3 py-2 w-28 text-right text-emerald-600">Unit Cost</th>
@@ -1417,7 +1423,22 @@ export default function Inventory() {
                                                             </td>
                                                             <td className="px-3 py-2">
                                                                 <input type="number" step="any" min="0" value={item.fbr_percent} onChange={e => updateTruckItem(idx, 'fbr_percent', parseFloat(e.target.value) || 0)}
-                                                                    className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs font-mono focus:ring-2 focus:ring-emerald-400 focus:outline-none" />
+                                                                    className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs font-mono focus:ring-2 focus:ring-amber-400 focus:outline-none" />
+                                                            </td>
+                                                            {/* Per-product Cust FBR toggle */}
+                                                            <td className="px-3 py-2 text-center">
+                                                                <label title={(item.include_cust_fbr ?? true) ? 'Cust FBR included in unit cost — click to exclude' : 'Cust FBR excluded — click to include'}
+                                                                    className="inline-flex flex-col items-center gap-0.5 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={item.include_cust_fbr ?? true}
+                                                                        onChange={e => updateTruckItem(idx, 'include_cust_fbr', e.target.checked)}
+                                                                        className="w-3.5 h-3.5 rounded text-amber-500 border-border bg-background focus:ring-amber-400 cursor-pointer"
+                                                                    />
+                                                                    <span className={`text-[9px] font-bold uppercase ${(item.include_cust_fbr ?? true) ? 'text-amber-500' : 'text-muted-foreground line-through'}`}>
+                                                                        {(item.include_cust_fbr ?? true) ? 'Yes' : 'No'}
+                                                                    </span>
+                                                                </label>
                                                             </td>
                                                             {/* Per-product Builty toggle */}
                                                             <td className="px-3 py-2 text-center">
