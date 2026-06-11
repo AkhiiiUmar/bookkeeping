@@ -420,6 +420,8 @@ export default function Inventory() {
         let baseBillTotal = 0;        // pure base price sum (matches company invoice)
         let agencyLedgerTotal = 0;    // base + company FBR (what we owe them)
         let overallOurCost = 0;       // base + builty/unloading + company FBR + customer FBR
+        let totalCustFbrApplied = 0;  // total customer FBR actually applied
+        let totalLogisticsApplied = 0; // total logistics actually applied
 
         const calculatedItems = truckItems.map(item => {
             const prod = products.find(p => p.id === item.product_id);
@@ -453,6 +455,8 @@ export default function Inventory() {
             baseBillTotal += itemBaseTotal;
             agencyLedgerTotal += agencyItemBillTotal;
             overallOurCost += itemTotalCost;
+            totalCustFbrApplied += customerFbrTotal;
+            totalLogisticsApplied += logisticsTotal;
 
             let newWeightedCost = itemUnitCost;
             if (prod) {
@@ -477,7 +481,7 @@ export default function Inventory() {
             };
         });
 
-        return { combinedRate, cartonRate, baseBillTotal, agencyLedgerTotal, overallOurCost, calculatedItems };
+        return { combinedRate, cartonRate, baseBillTotal, agencyLedgerTotal, overallOurCost, calculatedItems, totalCustFbrApplied, totalLogisticsApplied };
     })();
 
 
@@ -1501,10 +1505,19 @@ export default function Inventory() {
                                             <span>Agency Ledger (base + co. FBR):</span>
                                             <span className="font-mono text-white">Rs {bulkDeliveryCalculations.agencyLedgerTotal.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-between md:justify-end gap-6 text-xs text-indigo-400">
-                                            <span>Our Total Cost (incl. logistics + all FBR):</span>
-                                            <span className="font-mono">Rs {bulkDeliveryCalculations.overallOurCost.toLocaleString()}</span>
-                                        </div>
+                                        {/* Our Total Cost — only show when logistics or customer FBR is actually applied */}
+                                        {(bulkDeliveryCalculations.totalLogisticsApplied > 0 || bulkDeliveryCalculations.totalCustFbrApplied > 0) && (
+                                            <div className="flex justify-between md:justify-end gap-6 text-xs text-indigo-400">
+                                                <span>
+                                                    Our Total Cost (incl.
+                                                    {bulkDeliveryCalculations.totalLogisticsApplied > 0 && ' logistics'}
+                                                    {bulkDeliveryCalculations.totalLogisticsApplied > 0 && bulkDeliveryCalculations.totalCustFbrApplied > 0 && ' +'}
+                                                    {bulkDeliveryCalculations.totalCustFbrApplied > 0 && ' Cust FBR'}
+                                                    ):
+                                                </span>
+                                                <span className="font-mono">Rs {bulkDeliveryCalculations.overallOurCost.toLocaleString()}</span>
+                                            </div>
+                                        )}
                                         {parseFloat(truckPaidAmount) > 0 && (
                                             <div className="flex justify-between md:justify-end gap-6 text-xs text-amber-400">
                                                 <span>Minus Paid Installment:</span>
@@ -1516,7 +1529,11 @@ export default function Inventory() {
                                             <span className="text-2xl font-bold font-mono text-emerald-400">
                                                 Rs {(bulkDeliveryCalculations.agencyLedgerTotal - (parseFloat(truckPaidAmount) || 0)).toLocaleString()}
                                             </span>
-                                            <span className="text-[10px] text-slate-500 block mt-0.5">Customer FBR 2.5% & logistics tracked in product cost only</span>
+                                            {(bulkDeliveryCalculations.totalCustFbrApplied > 0 || bulkDeliveryCalculations.totalLogisticsApplied > 0) && (
+                                                <span className="text-[10px] text-slate-500 block mt-0.5">
+                                                    {[bulkDeliveryCalculations.totalCustFbrApplied > 0 && 'Cust FBR', bulkDeliveryCalculations.totalLogisticsApplied > 0 && 'logistics'].filter(Boolean).join(' & ')} tracked in product cost only
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
