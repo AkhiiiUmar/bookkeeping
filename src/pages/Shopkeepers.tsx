@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, User, Download, Search, MapPin, ChevronRight, Phone, SlidersHorizontal, ChevronDown, BookOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, User, Download, Search, MapPin, ChevronRight, Phone, SlidersHorizontal, ChevronDown, BookOpen, IndianRupee } from 'lucide-react';
 import type { Shopkeeper } from '../store/useStore';
 import { printHtml } from '../utils/print';
 
@@ -10,7 +10,6 @@ const emptyForm: ShopkeeperForm = { name: '', phone: '', address: '', opening_ba
 
 /** Extract the last meaningful word/segment from an address for a location pill */
 function extractLocation(address: string): string {
-    // Take everything after last comma, or full string if no comma
     const parts = address.split(',').map(p => p.trim()).filter(Boolean);
     return parts[parts.length - 1] ?? address.trim();
 }
@@ -39,8 +38,10 @@ function avatarColor(name: string): [string, string] {
     return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
 export default function Shopkeepers() {
-    const { shopkeepers, addShopkeeper, updateShopkeeper, deleteShopkeeper, setOpeningBalance } = useStore();
+    const { shopkeepers, addShopkeeper, updateShopkeeper, deleteShopkeeper, setOpeningBalance, addPayment } = useStore();
 
     const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; editing?: Shopkeeper }>({ open: false, mode: 'add' });
     const [form, setForm] = useState<ShopkeeperForm>(emptyForm);
@@ -49,6 +50,13 @@ export default function Shopkeepers() {
     const [locationFilter, setLocationFilter] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
     const [khataModal, setKhataModal] = useState<{ open: boolean; shopkeeper: Shopkeeper | null; value: string }>({ open: false, shopkeeper: null, value: '' });
+    const [alphabetFilter, setAlphabetFilter] = useState<string | null>(null);
+
+    // ── Quick Receive Payment Modal ──────────────────────────────────────
+    const [receiveModal, setReceiveModal] = useState<{ open: boolean; shopkeeper: Shopkeeper | null }>({ open: false, shopkeeper: null });
+    const [receiveAmount, setReceiveAmount] = useState('');
+    const [receiveNote, setReceiveNote] = useState('');
+    const [receiveDate, setReceiveDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     // ── Derive unique location chips from addresses ──────────────────────
     const locationOptions = useMemo(() => {
@@ -57,6 +65,16 @@ export default function Shopkeepers() {
             if (s.address) set.add(extractLocation(s.address));
         });
         return Array.from(set).sort();
+    }, [shopkeepers]);
+
+    // ── Available alphabet letters (only letters that have shopkeepers) ──
+    const availableLetters = useMemo(() => {
+        const letters = new Set<string>();
+        shopkeepers.forEach(s => {
+            const first = s.name.charAt(0).toUpperCase();
+            if (ALPHABET.includes(first)) letters.add(first);
+        });
+        return letters;
     }, [shopkeepers]);
 
     // ── Filtered list ────────────────────────────────────────────────────
@@ -71,9 +89,12 @@ export default function Shopkeepers() {
             const matchLocation =
                 locationFilter === 'all' ||
                 (s.address && extractLocation(s.address) === locationFilter);
-            return matchSearch && matchLocation;
+            const matchAlphabet =
+                !alphabetFilter ||
+                s.name.charAt(0).toUpperCase() === alphabetFilter;
+            return matchSearch && matchLocation && matchAlphabet;
         });
-    }, [shopkeepers, search, locationFilter]);
+    }, [shopkeepers, search, locationFilter, alphabetFilter]);
 
     // ── Modal helpers ────────────────────────────────────────────────────
     function openAdd() {
@@ -101,6 +122,29 @@ export default function Shopkeepers() {
         const amount = parseFloat(khataModal.value) || 0;
         setOpeningBalance(khataModal.shopkeeper.id, amount);
         setKhataModal({ open: false, shopkeeper: null, value: '' });
+    }
+
+    // ── Quick Receive Payment ─────────────────────────────────────────────
+    function openReceive(s: Shopkeeper) {
+        setReceiveModal({ open: true, shopkeeper: s });
+        setReceiveAmount('');
+        setReceiveNote('');
+        setReceiveDate(new Date().toISOString().split('T')[0]);
+    }
+    function handleReceivePayment(e: React.FormEvent) {
+        e.preventDefault();
+        if (!receiveModal.shopkeeper) return;
+        const amt = parseFloat(receiveAmount);
+        if (isNaN(amt) || amt <= 0) return;
+        addPayment({
+            shopkeeper_id: receiveModal.shopkeeper.id,
+            amount: amt,
+            date: new Date(receiveDate + 'T12:00:00').toISOString(),
+            note: receiveNote.trim() || undefined,
+        });
+        setReceiveModal({ open: false, shopkeeper: null });
+        setReceiveAmount('');
+        setReceiveNote('');
     }
 
     // ── Export ───────────────────────────────────────────────────────────
@@ -180,10 +224,7 @@ export default function Shopkeepers() {
 
             {/* ── Search + Filter bar ─────────────────────────────────────── */}
             <div className="space-y-2">
-                {/* Unified pill bar */}
                 <div className="flex items-stretch h-12 bg-card border border-border rounded-2xl overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-[#7F56D9]/30 focus-within:border-[#7F56D9]/50 transition-all">
-
-                    {/* Left: Filter toggle button */}
                     <button
                         onClick={() => setShowFilters(v => !v)}
                         className={`flex items-center gap-2 px-4 border-r border-border text-sm font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
@@ -197,27 +238,29 @@ export default function Shopkeepers() {
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* Centre: Search input */}
                     <div className="relative flex-1 flex items-center">
                         <Search className="absolute left-4 w-4 h-4 text-muted-foreground pointer-events-none" />
                         <input
                             type="text"
                             value={search}
-                            onChange={e => setSearch(e.target.value)}
+                            onChange={e => { setSearch(e.target.value); setAlphabetFilter(null); }}
                             placeholder="Search by name, phone or address…"
                             className="w-full h-full pl-11 pr-4 text-sm bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />
                     </div>
 
-                    {/* Right: keyboard shortcut hint */}
-                    <div className="flex items-center pr-4 pl-2 flex-shrink-0">
-                        <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-muted-foreground bg-muted border border-border rounded-md">
-                            <span style={{fontFamily:'sans-serif'}}>⌘</span>K
-                        </kbd>
-                    </div>
+                    {/* Active alphabet filter badge */}
+                    {alphabetFilter && (
+                        <button
+                            onClick={() => setAlphabetFilter(null)}
+                            className="flex items-center gap-1 px-3 border-l border-border text-xs font-bold text-[#7F56D9] bg-[#F5F0FF] hover:bg-[#EDE9FE] transition flex-shrink-0"
+                        >
+                            {alphabetFilter}
+                            <X className="w-3 h-3" />
+                        </button>
+                    )}
                 </div>
 
-                {/* Expandable location chips panel */}
                 {showFilters && locationOptions.length > 0 && (
                     <div className="bg-card border border-border rounded-2xl px-4 py-3 flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-top-1 duration-150">
                         <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
@@ -266,100 +309,143 @@ export default function Shopkeepers() {
                 </div>
             )}
 
-            {/* ── Card grid ───────────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map(s => {
-                    const [bgCol, textCol] = avatarColor(s.name);
-                    const hasPending = s.current_balance > 0;
-                    return (
-                        <div
-                            key={s.id}
-                            className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-[#C4B5FD] transition-all group relative flex flex-col"
-                        >
-                            {/* Edit / Delete / Khata hover actions */}
-                            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button
-                                    onClick={() => openKhata(s)}
-                                    title="Set opening balance from paper khata"
-                                    className="p-1.5 text-muted-foreground hover:text-[#7F56D9] hover:bg-[#F5F0FF] rounded-lg transition"
+            {/* ── Main content: grid + alphabet scroll ───────────────────── */}
+            {shopkeepers.length > 0 && (
+                <div className="flex gap-3">
+                    {/* ── Card grid ────────────────────────────────────────── */}
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filtered.map(s => {
+                            const [bgCol, textCol] = avatarColor(s.name);
+                            const hasPending = s.current_balance > 0;
+                            return (
+                                <div
+                                    key={s.id}
+                                    className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-[#C4B5FD] transition-all group relative flex flex-col"
                                 >
-                                    <BookOpen className="w-3.5 h-3.5" />
-                                </button>
-                                <button onClick={() => openEdit(s)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition">
-                                    <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                <button onClick={() => setDeleteConfirm(s)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-
-                            <Link to={`/shopkeepers/${s.id}`} className="flex flex-col flex-1 p-5 min-w-0">
-                                {/* Top row: avatar + name */}
-                                <div className="flex items-center gap-3 pr-10">
-                                    <div
-                                        className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                                        style={{ background: bgCol, color: textCol }}
-                                    >
-                                        {initials(s.name)}
+                                    {/* Edit / Delete / Khata / Receive hover actions */}
+                                    <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <button
+                                            onClick={() => openReceive(s)}
+                                            title="Receive Payment"
+                                            className="p-1.5 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-lg transition"
+                                        >
+                                            <IndianRupee className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => openKhata(s)}
+                                            title="Set opening balance from paper khata"
+                                            className="p-1.5 text-muted-foreground hover:text-[#7F56D9] hover:bg-[#F5F0FF] rounded-lg transition"
+                                        >
+                                            <BookOpen className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button onClick={() => openEdit(s)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition">
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button onClick={() => setDeleteConfirm(s)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-bold text-foreground truncate text-[15px] leading-tight">{s.name}</h3>
-                                        {s.phone ? (
-                                            <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                                                <Phone className="w-3 h-3" /> {s.phone}
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground/50 mt-0.5 block">No phone</span>
+
+                                    <Link to={`/shopkeepers/${s.id}`} className="flex flex-col flex-1 p-5 min-w-0">
+                                        {/* Top row: avatar + name */}
+                                        <div className="flex items-center gap-3 pr-10">
+                                            <div
+                                                className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                                                style={{ background: bgCol, color: textCol }}
+                                            >
+                                                {initials(s.name)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-foreground truncate text-[15px] leading-tight">{s.name}</h3>
+                                                {s.phone ? (
+                                                    <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                                        <Phone className="w-3 h-3" /> {s.phone}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground/50 mt-0.5 block">No phone</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Address */}
+                                        {s.address && (
+                                            <div className="flex items-start gap-1.5 mt-3">
+                                                <MapPin className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0 mt-0.5" />
+                                                <span className="text-xs text-muted-foreground truncate">{s.address}</span>
+                                            </div>
                                         )}
-                                    </div>
+
+                                        {/* Divider */}
+                                        <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
+                                            {/* Balance badge */}
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block">Balance</span>
+                                                <span
+                                                    className="text-base font-bold font-mono"
+                                                    style={{ color: hasPending ? '#B42318' : '#027A48' }}
+                                                >
+                                                    Rs {s.current_balance.toLocaleString()}
+                                                </span>
+                                            </div>
+
+                                            {/* Status pill + arrow */}
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                                                    style={hasPending
+                                                        ? { background: '#FEF0C7', color: '#B54708' }
+                                                        : { background: '#D1FADF', color: '#027A48' }
+                                                    }
+                                                >
+                                                    {hasPending ? 'Pending' : 'Cleared'}
+                                                </span>
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#7F56D9] transition-colors" />
+                                            </div>
+                                        </div>
+                                    </Link>
                                 </div>
+                            );
+                        })}
+                    </div>
 
-                                {/* Address */}
-                                {s.address && (
-                                    <div className="flex items-start gap-1.5 mt-3">
-                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0 mt-0.5" />
-                                        <span className="text-xs text-muted-foreground truncate">{s.address}</span>
-                                    </div>
-                                )}
-
-                                {/* Divider */}
-                                <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
-                                    {/* Balance badge */}
-                                    <div>
-                                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block">Balance</span>
-                                        <span
-                                            className="text-base font-bold font-mono"
-                                            style={{ color: hasPending ? '#B42318' : '#027A48' }}
-                                        >
-                                            Rs {s.current_balance.toLocaleString()}
-                                        </span>
-                                    </div>
-
-                                    {/* Status pill + arrow */}
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className="text-[10px] font-bold px-2.5 py-1 rounded-full"
-                                            style={hasPending
-                                                ? { background: '#FEF0C7', color: '#B54708' }
-                                                : { background: '#D1FADF', color: '#027A48' }
-                                            }
-                                        >
-                                            {hasPending ? 'Pending' : 'Cleared'}
-                                        </span>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#7F56D9] transition-colors" />
-                                    </div>
-                                </div>
-                            </Link>
+                    {/* ── Alphabet Scroll Sidebar ───────────────────────────── */}
+                    {shopkeepers.length > 0 && (
+                        <div className="flex-shrink-0 w-8 flex flex-col gap-0.5 sticky top-4 self-start max-h-[80vh] overflow-y-auto py-1">
+                            {ALPHABET.map(letter => {
+                                const hasEntries = availableLetters.has(letter);
+                                const isActive = alphabetFilter === letter;
+                                return (
+                                    <button
+                                        key={letter}
+                                        onClick={() => {
+                                            setAlphabetFilter(isActive ? null : letter);
+                                            setSearch('');
+                                        }}
+                                        disabled={!hasEntries}
+                                        className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center ${
+                                            isActive
+                                                ? 'bg-[#7F56D9] text-white shadow-md scale-110'
+                                                : hasEntries
+                                                    ? 'text-[#7F56D9] hover:bg-[#F5F0FF] hover:scale-105 cursor-pointer'
+                                                    : 'text-muted-foreground/30 cursor-default'
+                                        }`}
+                                        title={hasEntries ? `Filter by ${letter}` : `No shopkeepers starting with ${letter}`}
+                                    >
+                                        {letter}
+                                    </button>
+                                );
+                            })}
                         </div>
-                    );
-                })}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* Result count footer */}
             {shopkeepers.length > 0 && filtered.length > 0 && (
                 <p className="text-xs text-muted-foreground text-center pb-2">
                     Showing {filtered.length} of {shopkeepers.length} shopkeepers
                     {locationFilter !== 'all' && ` · ${locationFilter}`}
+                    {alphabetFilter && ` · Names starting with "${alphabetFilter}"`}
                     {search && ` · "${search}"`}
                 </p>
             )}
@@ -403,7 +489,6 @@ export default function Shopkeepers() {
                                     className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40 bg-background text-foreground"
                                 />
                             </div>
-                            {/* Opening balance – only shown when adding a new shopkeeper */}
                             {modal.mode === 'add' && (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
                                     <div className="flex items-center gap-2">
@@ -477,6 +562,76 @@ export default function Shopkeepers() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Quick Receive Payment Modal ───────────────────────────── */}
+            {receiveModal.open && receiveModal.shopkeeper && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md border border-border overflow-hidden">
+                        <div className="flex justify-between items-center p-6 border-b border-border bg-muted/20">
+                            <div>
+                                <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                    <IndianRupee className="w-5 h-5" /> Record Received Payment
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1">From <strong className="text-foreground">{receiveModal.shopkeeper.name}</strong></p>
+                            </div>
+                            <button onClick={() => setReceiveModal({ open: false, shopkeeper: null })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        {/* Outstanding balance banner */}
+                        <div className="mx-6 mt-4 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
+                            <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">Current Balance Owed</span>
+                            <span className="text-xl font-black font-mono text-rose-400">Rs {receiveModal.shopkeeper.current_balance.toLocaleString()}</span>
+                        </div>
+                        <form onSubmit={handleReceivePayment} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-1">Payment Date</label>
+                                <input
+                                    type="date"
+                                    value={receiveDate}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={e => setReceiveDate(e.target.value)}
+                                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-1">Amount Received</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">Rs</span>
+                                    <input
+                                        type="number"
+                                        autoFocus
+                                        placeholder="0.00"
+                                        value={receiveAmount}
+                                        onChange={e => setReceiveAmount(e.target.value)}
+                                        className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground font-mono font-bold"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-1">Note / Reference</label>
+                                <textarea
+                                    placeholder="E.g., Cheque No, Bank Transfer Ref..."
+                                    value={receiveNote}
+                                    onChange={e => setReceiveNote(e.target.value)}
+                                    rows={2}
+                                    className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground"
+                                />
+                            </div>
+                            <div className="flex gap-3 justify-end pt-2 border-t border-border">
+                                <button type="button" onClick={() => setReceiveModal({ open: false, shopkeeper: null })} className="px-4 py-2 text-muted-foreground font-medium hover:bg-muted rounded-xl transition text-sm">Cancel</button>
+                                <button
+                                    type="submit"
+                                    disabled={!receiveAmount}
+                                    className="bg-emerald-600 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-bold shadow-sm transition hover:bg-emerald-700 text-sm"
+                                >
+                                    Post Payment
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

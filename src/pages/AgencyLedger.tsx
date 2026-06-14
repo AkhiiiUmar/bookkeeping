@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import {
     ArrowLeft, ArrowDownRight, ArrowUpRight, Calendar, Banknote,
     Building2, AlertTriangle, Plus, X, Pencil, Trash2,
-    Percent, TrendingUp, BookOpen, Sparkles, RotateCcw
+    Percent, TrendingUp, TrendingDown, BookOpen, Sparkles, RotateCcw, DollarSign
 } from 'lucide-react';
 import type { Product } from '../store/useStore';
 
@@ -44,6 +44,7 @@ export default function AgencyLedger() {
     const { id } = useParams<{ id: string }>();
     const agencies = useStore(s => s.agencies);
     const products = useStore(s => s.products);
+    const invoices = useStore(s => s.invoices);
     const agencyPayments = useStore(s => s.agencyPayments);
     const addAgencyPayment = useStore(s => s.addAgencyPayment);
     const addDailyExpense = useStore(s => s.addDailyExpense);
@@ -130,6 +131,51 @@ export default function AgencyLedger() {
             totalLandedValue
         };
     }, [agencyProducts, productLandingStats]);
+
+    // ── PROFIT CALCULATIONS ─────────────────────────────────────────────────
+    const profitStats = useMemo(() => {
+        if (!agency) return { totalProfit: 0, thisMonthProfit: 0, lastMonthProfit: 0, growthPct: 0 };
+
+        // Get product IDs belonging to this agency
+        const agencyProductIds = new Set(agencyProducts.map(p => p.id));
+
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+        let totalProfit = 0;
+        let thisMonthProfit = 0;
+        let lastMonthProfit = 0;
+
+        invoices.forEach(inv => {
+            const invDate = new Date(inv.date);
+            inv.items.forEach(item => {
+                // Find matching product
+                const prod = agencyProducts.find(p => p.name === item.product_name);
+                if (!prod && !agencyProducts.some(p => agencyProductIds.has(p.id))) return;
+
+                // Match product by name across agency products
+                const matchedProd = agencyProducts.find(p => p.name === item.product_name);
+                if (!matchedProd) return;
+
+                const profit = (item.price - matchedProd.cost_price) * item.quantity;
+                totalProfit += profit;
+
+                if (invDate >= thisMonthStart) {
+                    thisMonthProfit += profit;
+                } else if (invDate >= lastMonthStart && invDate <= lastMonthEnd) {
+                    lastMonthProfit += profit;
+                }
+            });
+        });
+
+        const growthPct = lastMonthProfit === 0
+            ? (thisMonthProfit > 0 ? 100 : 0)
+            : parseFloat((((thisMonthProfit - lastMonthProfit) / Math.abs(lastMonthProfit)) * 100).toFixed(1));
+
+        return { totalProfit, thisMonthProfit, lastMonthProfit, growthPct };
+    }, [agency, agencyProducts, invoices]);
 
     if (!agency) {
         return (
@@ -233,6 +279,10 @@ export default function AgencyLedger() {
     const previewSalePrice = calcSalePrice(productForm);
     const previewMargin = calcMargin(parseFloat(productForm.cost_price) || 0, previewSalePrice);
 
+    // Growth meter bar width clamped 0-100%
+    const growthPositive = profitStats.growthPct >= 0;
+    const growthBarWidth = Math.min(Math.abs(profitStats.growthPct), 100);
+
     return (
         <div className="space-y-6">
             {/* Navigation Header */}
@@ -241,7 +291,7 @@ export default function AgencyLedger() {
                     <Link to="/inventory" className="p-2.5 hover:bg-muted rounded-full transition flex-shrink-0"><ArrowLeft className="w-5 h-5 text-muted-foreground" /></Link>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <Link to="/inventory" className="text-xs text-muted-foreground hover:text-foreground font-medium transition">Inventory & Agencies</Link>
+                            <Link to="/inventory" className="text-xs text-muted-foreground hover:text-foreground font-medium transition">Inventory &amp; Agencies</Link>
                             <span className="text-xs text-muted-foreground">/</span>
                             <span className="text-xs text-foreground font-bold">{agency.name}</span>
                         </div>
@@ -263,24 +313,24 @@ export default function AgencyLedger() {
             </div>
 
             {/* Premium Dynamic Performance Summary cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition xl:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Catalog</span>
                         <div className="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg"><BookOpen className="w-4 h-4" /></div>
                     </div>
                     <p className="text-2xl font-black text-foreground font-mono">{agencyProducts.length} <span className="text-xs font-medium text-muted-foreground">Products</span></p>
-                    <span className="text-[11px] text-muted-foreground block mt-1">Total cartons in stock: <strong className="text-foreground">{summaryStats.totalStockCartons.toLocaleString()}</strong></span>
+                    <span className="text-[11px] text-muted-foreground block mt-1">Total cartons: <strong className="text-foreground">{summaryStats.totalStockCartons.toLocaleString()}</strong></span>
                 </div>
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition">
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition xl:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Landed Stock Value</span>
                         <div className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg"><Sparkles className="w-4 h-4" /></div>
                     </div>
                     <p className="text-2xl font-black text-emerald-500 font-mono">Rs {summaryStats.totalLandedValue.toLocaleString()}</p>
-                    <span className="text-[11px] text-muted-foreground block mt-1">Landed (after-tax) cost value of stock</span>
+                    <span className="text-[11px] text-muted-foreground block mt-1">Landed (after-tax) cost value</span>
                 </div>
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition">
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition xl:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Raw Invoice Value</span>
                         <div className="p-1.5 bg-muted text-muted-foreground rounded-lg"><Banknote className="w-4 h-4" /></div>
@@ -288,13 +338,54 @@ export default function AgencyLedger() {
                     <p className="text-2xl font-black text-foreground font-mono">Rs {summaryStats.totalInvoiceValue.toLocaleString()}</p>
                     <span className="text-[11px] text-muted-foreground block mt-1">Raw base cost value of stock</span>
                 </div>
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition">
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition xl:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">FBR Landed Markup</span>
                         <div className="p-1.5 bg-amber-500/10 text-amber-400 rounded-lg"><Percent className="w-4 h-4" /></div>
                     </div>
                     <p className="text-2xl font-black text-amber-500 font-mono">+{agency.fbr_percent}% <span className="text-xs font-medium text-muted-foreground">FBR</span></p>
                     <span className="text-[11px] text-muted-foreground block mt-1">Applied on transport + base price</span>
+                </div>
+
+                {/* ── NEW: Total Profit Card ─────────────────────────────── */}
+                <div className="bg-gradient-to-br from-emerald-950 to-teal-950 rounded-2xl border border-emerald-500/20 p-5 shadow-md hover:shadow-lg transition xl:col-span-1">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Total Profit</span>
+                        <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg"><DollarSign className="w-4 h-4" /></div>
+                    </div>
+                    <p className={`text-2xl font-black font-mono ${profitStats.totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        Rs {Math.abs(profitStats.totalProfit).toLocaleString()}
+                    </p>
+                    <span className="text-[11px] text-emerald-500/70 block mt-1">
+                        {profitStats.totalProfit >= 0 ? 'Net profit from this agency' : 'Net loss from this agency'}
+                    </span>
+                </div>
+
+                {/* ── NEW: Growth Meter Card ─────────────────────────────── */}
+                <div className="bg-gradient-to-br from-indigo-950 to-purple-950 rounded-2xl border border-indigo-500/20 p-5 shadow-md hover:shadow-lg transition xl:col-span-1">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">Monthly Growth</span>
+                        <div className={`p-1.5 rounded-lg ${growthPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {growthPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                        </div>
+                    </div>
+                    <div className="flex items-end gap-2 mb-2">
+                        <span className={`text-2xl font-black font-mono ${growthPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {growthPositive ? '+' : ''}{profitStats.growthPct}%
+                        </span>
+                        <span className="text-[10px] text-indigo-300/60 mb-1">vs last month</span>
+                    </div>
+                    {/* Animated growth bar */}
+                    <div className="w-full h-2 bg-indigo-900/60 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all duration-700 ${growthPositive ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-red-600 to-rose-400'}`}
+                            style={{ width: `${growthBarWidth}%` }}
+                        />
+                    </div>
+                    <div className="flex justify-between mt-1.5 text-[9px] text-indigo-300/50">
+                        <span>This: Rs {profitStats.thisMonthProfit.toLocaleString()}</span>
+                        <span>Last: Rs {profitStats.lastMonthProfit.toLocaleString()}</span>
+                    </div>
                 </div>
             </div>
 
@@ -303,11 +394,11 @@ export default function AgencyLedger() {
                 <div className="flex gap-2">
                     <button onClick={() => setActiveTab('products')}
                         className={`pb-3 text-sm font-bold border-b-2 px-4 transition ${activeTab === 'products' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-                        📦 Products & Prices Catalog
+                        📦 Products &amp; Prices Catalog
                     </button>
                     <button onClick={() => setActiveTab('ledger')}
                         className={`pb-3 text-sm font-bold border-b-2 px-4 transition ${activeTab === 'ledger' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-                        📖 Ledger & Financial Statements
+                        📖 Ledger &amp; Financial Statements
                     </button>
                 </div>
                 {activeTab === 'ledger' && (
@@ -338,7 +429,7 @@ export default function AgencyLedger() {
                 <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
                     <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20">
                         <div>
-                            <h3 className="font-bold text-foreground text-sm">Product Valuation & Landed Price Metrics</h3>
+                            <h3 className="font-bold text-foreground text-sm">Product Valuation &amp; Landed Price Metrics</h3>
                             <p className="text-xs text-muted-foreground">Live calculator breaking down carton landing expenses, FBR taxes, profit margins, and inventory asset values.</p>
                         </div>
                     </div>
@@ -560,7 +651,7 @@ export default function AgencyLedger() {
                                 >
                                     <option value="payment">Payment to Supplier (Subtracts from Owed Balance)</option>
                                     <option value="purchase">Purchase / Invoice Bill (Adds to Owed Balance)</option>
-                                    <option value="expense">Expense paid on behalf of Company (Subtracts from Owed & records Daily Expense)</option>
+                                    <option value="expense">Expense paid on behalf of Company (Subtracts from Owed &amp; records Daily Expense)</option>
                                 </select>
                             </div>
                             <div>
@@ -800,7 +891,7 @@ export default function AgencyLedger() {
 
                             <div className="flex gap-3 justify-end pt-4 border-t border-border">
                                 <button type="button" onClick={() => setProductModal({ open: false })} className="px-4 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted/50 transition">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition">Save & Sync</button>
+                                <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition">Save &amp; Sync</button>
                             </div>
                         </form>
                     </div>

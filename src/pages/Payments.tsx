@@ -17,6 +17,7 @@ export default function Payments() {
     const [shopkeeperId, setShopkeeperId] = useState('');
     const [amount, setAmount] = useState('');
     const [note, setNote] = useState('');
+    const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     const sortedPayments = [...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -27,18 +28,28 @@ export default function Payments() {
     const totalPending = pendingShopkeepers.reduce((sum, s) => sum + s.current_balance, 0);
     const totalReceived = payments.reduce((sum, p) => sum + p.amount, 0);
 
+    // Get selected shopkeeper for balance preview
+    const selectedSk = shopkeepers.find(s => s.id === shopkeeperId);
+
     function openModal(preselect?: string) {
         setShopkeeperId(preselect ?? '');
         setAmount('');
         setNote('');
+        setPaymentDate(new Date().toISOString().split('T')[0]);
         setModalOpen(true);
     }
 
     function handleSave() {
         if (!shopkeeperId || !amount) return;
-        addPayment({ shopkeeper_id: shopkeeperId, amount: parseFloat(amount), date: new Date().toISOString(), note });
+        addPayment({
+            shopkeeper_id: shopkeeperId,
+            amount: parseFloat(amount),
+            date: new Date(paymentDate + 'T12:00:00').toISOString(),
+            note
+        });
         setModalOpen(false);
         setShopkeeperId(''); setAmount(''); setNote('');
+        setPaymentDate(new Date().toISOString().split('T')[0]);
     }
 
     const printPendingSlip = (s: typeof shopkeepers[0]) => {
@@ -105,7 +116,7 @@ export default function Payments() {
 
             {/* Summary KPIs */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-2xl border border-[#E8E8E8] p-5 shadow-sm flex items-center gap-4">
+                <div className="bg-white dark:bg-card rounded-2xl border border-[#E8E8E8] dark:border-border p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-red-50 rounded-lg"><AlertCircle className="w-6 h-6 text-red-500" /></div>
                     <div>
                         <p className="text-sm font-semibold text-[#535862]">Total Outstanding Pending</p>
@@ -113,7 +124,7 @@ export default function Payments() {
                         <p className="text-xs text-[#A4A7AE]">{pendingShopkeepers.length} shopkeeper{pendingShopkeepers.length !== 1 ? 's' : ''} owe balances</p>
                     </div>
                 </div>
-                <div className="bg-white rounded-2xl border border-[#E8E8E8] p-5 shadow-sm flex items-center gap-4">
+                <div className="bg-white dark:bg-card rounded-2xl border border-[#E8E8E8] dark:border-border p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-[#DCFCE7] rounded-lg"><CheckCircle className="w-6 h-6 text-[#17B26A]" /></div>
                     <div>
                         <p className="text-sm font-semibold text-[#535862]">Total Cash Received</p>
@@ -237,12 +248,13 @@ export default function Payments() {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-xl shadow-xl w-full max-w-md flex flex-col border border-border">
+                    <div className="bg-card rounded-xl shadow-xl w-full max-w-md flex flex-col border border-border overflow-hidden">
                         <div className="p-6 border-b border-border flex justify-between items-center bg-muted/20">
                             <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><IndianRupee className="w-5 h-5" /> Record Received Payment</h3>
                             <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground text-2xl leading-none">&times;</button>
                         </div>
                         <div className="p-6 space-y-4">
+                            {/* Shopkeeper selector */}
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-2">Shopkeeper</label>
                                 <SearchableSelect
@@ -253,6 +265,38 @@ export default function Payments() {
                                     accentColor="emerald"
                                 />
                             </div>
+
+                            {/* Balance banner — shows after selecting shopkeeper */}
+                            {selectedSk && (
+                                <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${selectedSk.current_balance > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
+                                    <span className={`text-xs font-bold uppercase tracking-wider ${selectedSk.current_balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                        Current Balance Owed
+                                    </span>
+                                    <span className={`text-xl font-black font-mono ${selectedSk.current_balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                        Rs {selectedSk.current_balance.toLocaleString()}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Date picker */}
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Payment Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                    <input
+                                        type="date"
+                                        value={paymentDate}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        onChange={e => setPaymentDate(e.target.value)}
+                                        className="w-full bg-muted/30 border border-border rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground font-mono"
+                                    />
+                                </div>
+                                {paymentDate !== new Date().toISOString().split('T')[0] && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">📅 Backdated payment entry</p>
+                                )}
+                            </div>
+
+                            {/* Amount */}
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-2">Amount Received</label>
                                 <div className="relative">
@@ -265,7 +309,18 @@ export default function Payments() {
                                         className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground font-mono font-bold"
                                     />
                                 </div>
+                                {/* Show remaining balance preview */}
+                                {selectedSk && amount && parseFloat(amount) > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Remaining after payment:{' '}
+                                        <strong className={`font-mono ${selectedSk.current_balance - parseFloat(amount) > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                            Rs {Math.max(0, selectedSk.current_balance - parseFloat(amount)).toLocaleString()}
+                                        </strong>
+                                    </p>
+                                )}
                             </div>
+
+                            {/* Note */}
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-2">Note / Reference</label>
                                 <textarea

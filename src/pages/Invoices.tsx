@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import type { Invoice, InvoiceItem } from '../store/useStore';
 import { 
-    CheckCircle, Calendar, Receipt, Trash2, Printer, Eye, TrendingUp, X 
+    CheckCircle, Calendar, Receipt, Trash2, Printer, Eye, TrendingUp, X, Search, Filter
 } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { printHtml } from '../utils/print';
+
+const MONTHS = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
 
 export default function Invoices() {
     const { invoices, shopkeepers, products, createDirectInvoice, deleteInvoice } = useStore();
@@ -22,7 +27,31 @@ export default function Invoices() {
     const [customPrice, setCustomPrice] = useState('');
     const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-    const sortedInvoices = [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // ── Search & Filter State ────────────────────────────────────────────
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0-11
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+    // Get unique years from invoices
+    const availableYears = useMemo(() => {
+        const years = new Set<number>();
+        invoices.forEach(inv => years.add(new Date(inv.date).getFullYear()));
+        years.add(new Date().getFullYear());
+        return Array.from(years).sort((a, b) => b - a);
+    }, [invoices]);
+
+    // ── Filtered invoices ────────────────────────────────────────────────
+    const filteredInvoices = useMemo(() => {
+        const sorted = [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const q = searchQuery.toLowerCase().trim();
+        return sorted.filter(inv => {
+            const shopkeeper = shopkeepers.find(s => s.id === inv.shopkeeper_id);
+            const matchSearch = !q || (shopkeeper?.name ?? '').toLowerCase().includes(q);
+            const invDate = new Date(inv.date);
+            const matchMonth = selectedMonth === null || (invDate.getMonth() === selectedMonth && invDate.getFullYear() === selectedYear);
+            return matchSearch && matchMonth;
+        });
+    }, [invoices, shopkeepers, searchQuery, selectedMonth, selectedYear]);
 
     useEffect(() => {
         if (selectedProduct) {
@@ -90,7 +119,7 @@ export default function Invoices() {
             <body onload="window.print()">
                 <div class="header">
                     <h2>DISTRIBUTION POS</h2>
-                    <p>Distribution Business & Logistics</p>
+                    <p>Distribution Business &amp; Logistics</p>
                     <p>Standard Cash Memo Statement</p>
                 </div>
                 <div class="divider"></div>
@@ -175,6 +204,66 @@ export default function Invoices() {
                 </button>
             </div>
 
+            {/* ── Search & Month Filter Bar ── */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-4 space-y-3">
+                {/* Search row */}
+                <div className="flex gap-3 items-center">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder="Search by shopkeeper name…"
+                            className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                    {/* Year selector */}
+                    <select
+                        value={selectedYear}
+                        onChange={e => setSelectedYear(Number(e.target.value))}
+                        className="bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40 font-medium"
+                    >
+                        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                </div>
+
+                {/* Month filter pills */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    <button
+                        onClick={() => setSelectedMonth(null)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedMonth === null ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
+                    >
+                        All Months
+                    </button>
+                    {MONTHS.map((month, idx) => (
+                        <button
+                            key={month}
+                            onClick={() => setSelectedMonth(selectedMonth === idx ? null : idx)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedMonth === idx ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
+                        >
+                            {month}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Active filter summary */}
+                {(searchQuery || selectedMonth !== null) && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Showing <strong className="text-foreground">{filteredInvoices.length}</strong> of <strong className="text-foreground">{invoices.length}</strong> invoices</span>
+                        {searchQuery && <span className="bg-muted px-2 py-0.5 rounded-full">"{searchQuery}"</span>}
+                        {selectedMonth !== null && <span className="bg-muted px-2 py-0.5 rounded-full">{MONTHS[selectedMonth]} {selectedYear}</span>}
+                        <button onClick={() => { setSearchQuery(''); setSelectedMonth(null); }} className="text-[#7F56D9] hover:underline ml-auto">Clear filters</button>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[900px]">
@@ -190,12 +279,20 @@ export default function Invoices() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {sortedInvoices.length === 0 && (
+                        {filteredInvoices.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">No invoices found.</td>
+                                <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                                    {invoices.length === 0 ? 'No invoices found.' : (
+                                        <div className="space-y-2">
+                                            <Search className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+                                            <p className="font-semibold">No invoices match your filters</p>
+                                            <p className="text-sm text-muted-foreground/70">Try adjusting the search or month filter</p>
+                                        </div>
+                                    )}
+                                </td>
                             </tr>
                         )}
-                        {sortedInvoices.map(inv => {
+                        {filteredInvoices.map(inv => {
                             const shopkeeper = shopkeepers.find(s => s.id === inv.shopkeeper_id);
                             return (
                                 <tr key={inv.id} className="hover:bg-muted/50 transition group">
@@ -461,10 +558,10 @@ export default function Invoices() {
                                                 <td></td>
                                             </tr>
                                         </tbody>
-                                    </table>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
                         </div>
 
                         <div className="p-6 border-t border-border bg-emerald-50/10 dark:bg-emerald-950/10 flex justify-end gap-3 rounded-b-xl">
