@@ -49,13 +49,13 @@ export default function Orders() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card p-6 rounded-xl shadow-sm border border-border">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-card p-4 sm:p-6 rounded-xl shadow-sm border border-border">
                 <div>
-                    <h2 className="text-2xl font-bold text-primary">Roz Namcha (Orders)</h2>
-                    <p className="text-muted-foreground text-sm">Manage daily shopkeeper orders</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-primary">Roz Namcha (Orders)</h2>
+                    <p className="text-muted-foreground text-sm mt-0.5">Manage daily shopkeeper orders</p>
                 </div>
-                <button onClick={() => setModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition flex gap-2 items-center">
-                    <Plus className="w-4 h-4" /> Add Order
+                <button onClick={() => setModalOpen(true)} className="self-start sm:self-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition flex gap-2 items-center whitespace-nowrap">
+                    <Plus className="w-4 h-4 flex-shrink-0" /> Add Order
                 </button>
             </div>
 

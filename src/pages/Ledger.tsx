@@ -205,15 +205,15 @@ export default function Ledger() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card p-6 rounded-2xl shadow-sm border border-border">
-                <div className="flex items-center gap-4">
-                    <Link to="/shopkeepers" className="p-2 hover:bg-muted rounded-full transition">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 bg-card p-4 sm:p-6 rounded-2xl shadow-sm border border-border">
+                <div className="flex items-center gap-3">
+                    <Link to="/shopkeepers" className="p-2 hover:bg-muted rounded-full transition flex-shrink-0">
                         <ArrowLeft className="w-5 h-5 text-muted-foreground" />
                     </Link>
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-2xl font-extrabold text-foreground">{shopkeeper.name}</h2>
-                            <button onClick={printShopkeeperLedger} className="p-1.5 text-muted-foreground hover:text-indigo-500 hover:bg-muted rounded-lg transition" title="Print Ledger Statement">
+                            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground truncate">{shopkeeper.name}</h2>
+                            <button onClick={printShopkeeperLedger} className="p-1.5 text-muted-foreground hover:text-indigo-500 hover:bg-muted rounded-lg transition flex-shrink-0" title="Print Ledger Statement">
                                 <Printer className="w-4 h-4" />
                             </button>
                         </div>
@@ -221,17 +221,17 @@ export default function Ledger() {
                         {shopkeeper.phone && <p className="text-xs text-muted-foreground/70 mt-0.5">{shopkeeper.phone}</p>}
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-shrink-0 sm:flex-col sm:items-end">
                     {/* Quick Receive Payment Button */}
                     <button
                         onClick={() => setReceiveModal(true)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-2"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 sm:px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-2 whitespace-nowrap"
                     >
-                        <Plus className="w-4 h-4" /> Add Receiving
+                        <Plus className="w-4 h-4 flex-shrink-0" /> Add Receiving
                     </button>
                     <div className="text-right">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Outstanding Balance</span>
-                        <span className={`text-3xl font-extrabold tracking-tight block ${shopkeeper.current_balance > 0 ? 'text-rose-600 dark:text-rose-450' : 'text-emerald-600 dark:text-emerald-450'}`}>
+                        <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight block ${shopkeeper.current_balance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                             Rs {shopkeeper.current_balance.toLocaleString()}
                         </span>
                     </div>
@@ -281,19 +281,19 @@ export default function Ledger() {
 
             {/* Tabs */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-                <div className="flex border-b border-border bg-muted/30">
+                <div className="flex border-b border-border bg-muted/30 overflow-x-auto" style={{scrollbarWidth:'none'}}>
                     {([
                         { key: 'all', label: 'All History', icon: Calendar },
                         { key: 'invoices', label: `Invoices (${invoices.length})`, icon: Receipt },
                         { key: 'payments', label: `Payments (${payments.length})`, icon: Banknote },
-                        { key: 'pending', label: `Pending Orders (${pendingOrders.length})`, icon: Clock },
+                        { key: 'pending', label: `Pending (${pendingOrders.length})`, icon: Clock },
                     ] as { key: Tab; label: string; icon: React.ElementType }[]).map(t => (
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition ${tab === t.key ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                            className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium border-b-2 transition whitespace-nowrap flex-shrink-0 ${tab === t.key ? 'border-indigo-650 text-indigo-650 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
                         >
-                            <t.icon className="w-4 h-4" /> {t.label}
+                            <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" /> {t.label}
                         </button>
                     ))}
                 </div>

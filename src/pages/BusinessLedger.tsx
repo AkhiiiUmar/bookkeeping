@@ -333,7 +333,7 @@ export default function BusinessLedger() {
                 <div className="bg-card p-6 rounded-2xl border border-border flex flex-col justify-between shadow-sm">
                     <div>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Business Sales Volume</span>
-                        <h2 className="text-2xl font-extrabold text-[#5f69e1] font-mono mt-1">Rs {filteredStats.salesRevenue.toLocaleString()}</h2>
+                        <h2 className="text-2xl font-extrabold text-[#181D27] font-mono mt-1">Rs {filteredStats.salesRevenue.toLocaleString()}</h2>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-semibold mt-3 flex items-center gap-1.5">
                         <ShoppingCart className="w-3.5 h-3.5" /> {filteredStats.invoicesCount} Cash Memos Generated

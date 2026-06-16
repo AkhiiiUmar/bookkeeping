@@ -37,6 +37,13 @@ export default function Dashboard() {
     const totalExpenses = dailyExpenses.reduce((acc, e) => acc + e.amount, 0);
     const totalOwedAgencies = agencies.reduce((acc, a) => acc + a.current_balance, 0);
 
+    // Expenses this month
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const expensesThisMonth = dailyExpenses
+        .filter(e => new Date(e.date) >= monthStart)
+        .reduce((acc, e) => acc + e.amount, 0);
+
     const agencyStockData = useMemo(() => agencies.map(agency => {
         const ap = products.filter(p => p.agency_id === agency.id);
         const totalValue = ap.reduce((s, p) => s + p.current_stock * p.default_price, 0);
@@ -136,30 +143,32 @@ export default function Dashboard() {
     return (
         <div className="space-y-6">
             {/* Header Greeting Section */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight text-foreground">{greeting}, {userName}!</h2>
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground break-words">{greeting}, {userName}!</h2>
                     <p className="text-sm text-muted-foreground mt-1.5">Welcome back! Here's an overview of your distribution business.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0 sm:items-center w-full xl:w-auto">
-                    {/* Action Buttons - Hierarchy: Tertiary, Secondary, Primary */}
-                    <Link to="/payments" className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition text-center">
-                        Add Payment
-                    </Link>
-                    <Link to="/invoices" className="px-4 py-2 text-sm font-semibold border border-border bg-card text-foreground hover:bg-muted rounded-xl shadow-sm transition text-center">
-                        Cash Memo
-                    </Link>
-                    <Link to="/orders" className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl font-semibold transition shadow-sm text-sm">
-                        <ShoppingCart className="w-4 h-4" /> Add Order
-                    </Link>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0 sm:items-center w-full lg:w-auto">
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 flex-wrap">
+                        <Link to="/payments" className="px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition text-center">
+                            Add Payment
+                        </Link>
+                        <Link to="/invoices" className="px-3 py-2 text-sm font-semibold border border-border bg-card text-foreground hover:bg-muted rounded-xl shadow-sm transition text-center">
+                            Cash Memo
+                        </Link>
+                        <Link to="/orders" className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-2 rounded-xl font-semibold transition shadow-sm text-sm">
+                            <ShoppingCart className="w-4 h-4 flex-shrink-0" /> Add Order
+                        </Link>
+                    </div>
 
                     {/* Global Search and Filter System */}
-                    <div ref={searchRef} className="relative w-full sm:w-auto sm:min-w-[320px]">
+                    <div ref={searchRef} className="relative w-full sm:w-auto sm:min-w-[280px] lg:min-w-[320px]">
                         <div className="flex items-center gap-2 px-1 bg-card border border-border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                             {/* Filter Dropdown */}
-                            <div className="relative group">
+                            <div className="relative group flex-shrink-0">
                                 <select 
-                                    className="appearance-none bg-transparent text-xs font-semibold text-muted-foreground hover:text-foreground pl-3 pr-6 py-2.5 outline-none cursor-pointer z-10 relative"
+                                    className="appearance-none bg-transparent text-xs font-semibold text-muted-foreground hover:text-foreground pl-2 pr-5 py-2.5 outline-none cursor-pointer z-10 relative"
                                     value={searchFilter}
                                     onChange={(e) => setSearchFilter(e.target.value as FilterType)}
                                 >
@@ -167,15 +176,15 @@ export default function Dashboard() {
                                         <option key={f.key} value={f.key} className="bg-card text-foreground">{f.label}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-foreground transition-colors" />
+                                <ChevronDown className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
                             </div>
-                            <div className="w-px h-5 bg-border"></div>
+                            <div className="w-px h-5 bg-border flex-shrink-0"></div>
                             
                             {/* Search Input */}
-                            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-1" />
+                            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                             <input ref={searchInputRef} value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)}
                                 placeholder="Search..."
-                                className="flex-1 text-sm text-foreground placeholder-muted-foreground focus:outline-none bg-transparent py-2.5 min-w-[120px]" />
+                                className="flex-1 text-sm text-foreground placeholder-muted-foreground focus:outline-none bg-transparent py-2.5 min-w-0" />
                             
                             {/* Actions / Shortcuts */}
                             <div className="flex items-center gap-1.5 flex-shrink-0 pr-2">
@@ -215,12 +224,13 @@ export default function Dashboard() {
             </div>
 
             {/* Premium KPI Box Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
-                <KPIBox title="Total Sales" value={`Rs ${totalSales.toLocaleString()}`} subtext={`${invoices.length} cash memos`} icon={FileText} color="text-[#5f69e1]" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4 md:gap-5">
+                <KPIBox title="Total Sales" value={`Rs ${totalSales.toLocaleString()}`} subtext={`${invoices.length} cash memos`} icon={FileText} color="text-[#181D27]" />
                 <KPIBox title="Pending Amount" value={`Rs ${totalPendingBalance.toLocaleString()}`} subtext="From shopkeepers" icon={AlertCircle} color="text-red-500" />
                 <KPIBox title="Received Payments" value={`Rs ${totalPaymentsReceived.toLocaleString()}`} subtext="In bank/cash accounts" icon={Receipt} color="text-emerald-500" />
                 <KPIBox title="Total Stock Value" value={`Rs ${totalStockValue.toLocaleString()}`} subtext="Available warehouse stock" icon={Package} color="text-indigo-500" />
-                <KPIBox title="Daily Expenses" value={`Rs ${totalExpenses.toLocaleString()}`} subtext="Business & household" icon={Wallet} color="text-rose-500" />
+                <KPIBox title="Expenses This Month" value={`Rs ${expensesThisMonth.toLocaleString()}`} subtext={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })} icon={Wallet} color="text-rose-500" />
+                <KPIBox title="Overall Expenses" value={`Rs ${totalExpenses.toLocaleString()}`} subtext="All-time since day one" icon={TrendingDown} color="text-orange-500" />
                 <KPIBox title="Owed to Agencies" value={`Rs ${totalOwedAgencies.toLocaleString()}`} subtext="Outstanding credit balances" icon={Building2} color="text-amber-500" />
             </div>
 
@@ -232,7 +242,7 @@ export default function Dashboard() {
                     <span className="ml-auto text-xs font-mono font-bold text-[#6941C6] bg-[#F4EBFF] border border-[#D6BBFB] px-3 py-1 rounded-full">Total: Rs {totalStockValue.toLocaleString()}</span>
                 </div>
                 {agencies.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-6">No agencies added yet</p> : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                         {agencyStockData.map(({ agency, products: ap, totalValue, totalStock }) => (
                             <div key={agency.id} className="border border-[#E8E8E8] rounded-2xl p-5 bg-white hover:border-[#D6BBFB] hover:shadow-md transition duration-150">
                                 <div className="flex items-center justify-between mb-4">
@@ -373,7 +383,7 @@ export default function Dashboard() {
                     <span className="text-[10px] font-bold text-muted-foreground bg-card border border-border px-2.5 py-0.5 rounded-full shadow-sm ml-auto">{shopkeepers.length} total</span>
                 </div>
                 {shopkeepers.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-6">No shopkeepers added yet</p> : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {shopkeepers.slice(0, 6).map(s => (
                             <Link key={s.id} to={`/shopkeepers/${s.id}`} className="flex justify-between items-center p-4 border border-border rounded-2xl bg-card hover:border-indigo-600 hover:bg-muted/50 transition duration-150 shadow-sm">
                                 <div>
@@ -395,15 +405,15 @@ export default function Dashboard() {
 
 function KPIBox({ title, value, subtext, icon: Icon, color = 'text-primary' }: { title: string; value: string; subtext?: string; icon: React.ElementType; color?: string }) {
     return (
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border flex flex-col justify-between hover:shadow-md transition-all duration-200">
-            <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</span>
-                <div className={`p-2.5 rounded-xl bg-muted ${color}`}><Icon className="w-5 h-5" /></div>
+        <div className="bg-card p-4 md:p-6 rounded-2xl shadow-sm border border-border flex flex-col justify-between hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+                <span className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider leading-tight">{title}</span>
+                <div className={`p-2 md:p-2.5 rounded-xl bg-muted ${color} flex-shrink-0`}><Icon className="w-4 h-4 md:w-5 md:h-5" /></div>
             </div>
             <div>
-                <h3 className="text-2xl font-extrabold font-sans text-foreground tracking-tight">{value}</h3>
+                <h3 className="text-lg md:text-2xl font-extrabold font-sans text-foreground tracking-tight break-all">{value}</h3>
                 {subtext && (
-                    <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1">
+                    <p className="text-[10px] font-bold text-muted-foreground mt-1 md:mt-2 flex items-center gap-1">
                         {subtext}
                     </p>
                 )}

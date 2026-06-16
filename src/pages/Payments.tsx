@@ -104,18 +104,18 @@ export default function Payments() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center bg-card p-6 rounded-2xl shadow-sm border border-border">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-card p-4 sm:p-6 rounded-2xl shadow-sm border border-border">
                 <div>
-                    <h2 className="text-2xl font-extrabold text-[#101828] dark:text-white">Payments &amp; Ledger</h2>
-                    <p className="text-muted-foreground text-sm">Track outstanding shopkeeper accounts and received payments</p>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#101828]">Payments &amp; Ledger</h2>
+                    <p className="text-muted-foreground text-sm mt-0.5">Track outstanding shopkeeper accounts and received payments</p>
                 </div>
-                <button onClick={() => openModal()} className="bg-[#7F56D9] hover:bg-[#6941C6] text-white px-4 py-2 rounded-xl font-bold transition flex gap-2 items-center text-sm" style={{boxShadow:'0 1px 3px rgba(127,86,217,0.35), 0 0 0 1px #6941C6'}}>
-                    <IndianRupee className="w-4 h-4" /> Record Payment
+                <button onClick={() => openModal()} className="self-start sm:self-auto bg-[#7F56D9] hover:bg-[#6941C6] text-white px-4 py-2 rounded-xl font-bold transition flex gap-2 items-center text-sm whitespace-nowrap" style={{boxShadow:'0 1px 3px rgba(127,86,217,0.35), 0 0 0 1px #6941C6'}}>
+                    <IndianRupee className="w-4 h-4 flex-shrink-0" /> Record Payment
                 </button>
             </div>
 
             {/* Summary KPIs */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white dark:bg-card rounded-2xl border border-[#E8E8E8] dark:border-border p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-red-50 rounded-lg"><AlertCircle className="w-6 h-6 text-red-500" /></div>
                     <div>
@@ -136,19 +136,19 @@ export default function Payments() {
 
             {/* Tabs */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-                <div className="flex border-b border-border bg-muted/30">
+                <div className="flex border-b border-border bg-muted/30 overflow-x-auto" style={{scrollbarWidth:'none'}}>
                     <button onClick={() => setTab('pending')}
-                        className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold border-b-2 transition ${tab === 'pending' ? 'border-rose-500 text-rose-650 dark:text-rose-400 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                        <Clock className="w-4 h-4" />
+                        className={`flex items-center gap-2 px-4 sm:px-6 py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap flex-shrink-0 ${tab === 'pending' ? 'border-rose-500 text-rose-650 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+                        <Clock className="w-4 h-4 flex-shrink-0" />
                         Pending Balances
                         {pendingShopkeepers.length > 0 && (
                             <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold ml-1">{pendingShopkeepers.length}</span>
                         )}
                     </button>
                     <button onClick={() => setTab('received')}
-                        className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold border-b-2 transition ${tab === 'received' ? 'border-emerald-500 text-emerald-605 dark:text-emerald-400 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                        <CheckCircle className="w-4 h-4" />
-                        Received Payments ({sortedPayments.length})
+                        className={`flex items-center gap-2 px-4 sm:px-6 py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap flex-shrink-0 ${tab === 'received' ? 'border-emerald-500 text-emerald-605 bg-card' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                        Received ({sortedPayments.length})
                     </button>
                 </div>
 
@@ -166,32 +166,32 @@ export default function Payments() {
                                 const skPayments = payments.filter(p => p.shopkeeper_id === s.id);
                                 const lastPayment = skPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                                 return (
-                                    <div key={s.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition group">
-                                        <div className="flex items-center gap-4 min-w-0">
-                                            <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0 border border-rose-200">
-                                                <span className="text-rose-600 dark:text-rose-400 font-bold text-sm">{s.name.charAt(0).toUpperCase()}</span>
+                                    <div key={s.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 hover:bg-muted/50 transition gap-3">
+                                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0 border border-rose-200">
+                                                <span className="text-rose-600 font-bold text-sm">{s.name.charAt(0).toUpperCase()}</span>
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="font-bold text-foreground truncate">{s.name}</p>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-semibold border border-rose-200 dark:border-rose-900">
+                                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-semibold border border-rose-200">
                                                         <AlertCircle className="w-3 h-3" /> Pending
                                                     </span>
                                                     {lastPayment && (
-                                                        <span className="text-xs text-muted-foreground">Last payment: {new Date(lastPayment.date).toLocaleDateString()}</span>
+                                                        <span className="text-xs text-muted-foreground">Last: {new Date(lastPayment.date).toLocaleDateString()}</span>
                                                     )}
                                                     {!lastPayment && <span className="text-xs text-muted-foreground">No payments yet</span>}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 flex-shrink-0">
+                                        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 flex-shrink-0">
                                             <div className="text-right">
                                                 <p className="text-xs text-muted-foreground">Outstanding</p>
-                                                <p className="text-lg font-bold font-mono text-rose-600 dark:text-rose-400">Rs {s.current_balance.toLocaleString()}</p>
+                                                <p className="text-base sm:text-lg font-bold font-mono text-rose-600">Rs {s.current_balance.toLocaleString()}</p>
                                             </div>
                                             <div className="flex gap-1.5 items-center">
                                                 <button onClick={() => openModal(s.id)}
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 whitespace-nowrap">
                                                     <IndianRupee className="w-3.5 h-3.5" /> Receive
                                                 </button>
                                                 <button onClick={() => printPendingSlip(s)}

@@ -106,6 +106,21 @@ export default function AgencyLedger() {
             const totalStockValueInvoice = p.current_stock * rawCost;
             const totalStockValueLanded = p.current_stock * landedCost;
 
+            // --- Actual sales profit from invoices ---
+            let unitsSold = 0;
+            let revenueFromSales = 0;
+            let profitFromSales = 0;
+            invoices.forEach(inv => {
+                inv.items.forEach(item => {
+                    if (item.product_name === p.name) {
+                        unitsSold += item.quantity;
+                        revenueFromSales += item.amount;
+                        // Profit = (sale price they were billed - our landed cost) × qty
+                        profitFromSales += (item.price - landedCost) * item.quantity;
+                    }
+                });
+            });
+
             return {
                 ...p,
                 builtyShare,
@@ -115,10 +130,13 @@ export default function AgencyLedger() {
                 profit,
                 marginPercent,
                 totalStockValueInvoice,
-                totalStockValueLanded
+                totalStockValueLanded,
+                unitsSold,
+                revenueFromSales,
+                profitFromSales,
             };
         });
-    }, [agency, agencyProducts]);
+    }, [agency, agencyProducts, invoices]);
 
     // Summary calculation aggregates
     const summaryStats = useMemo(() => {
@@ -286,34 +304,34 @@ export default function AgencyLedger() {
     return (
         <div className="space-y-6">
             {/* Navigation Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-card p-6 rounded-2xl shadow-sm border border-border gap-4">
-                <div className="flex items-center gap-4">
-                    <Link to="/inventory" className="p-2.5 hover:bg-muted rounded-full transition flex-shrink-0"><ArrowLeft className="w-5 h-5 text-muted-foreground" /></Link>
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-card p-4 sm:p-6 rounded-2xl shadow-sm border border-border gap-4">
+                <div className="flex items-center gap-3">
+                    <Link to="/inventory" className="p-2 hover:bg-muted rounded-full transition flex-shrink-0"><ArrowLeft className="w-5 h-5 text-muted-foreground" /></Link>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Link to="/inventory" className="text-xs text-muted-foreground hover:text-foreground font-medium transition">Inventory &amp; Agencies</Link>
                             <span className="text-xs text-muted-foreground">/</span>
-                            <span className="text-xs text-foreground font-bold">{agency.name}</span>
+                            <span className="text-xs text-foreground font-bold truncate max-w-[120px] sm:max-w-none">{agency.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">Agency Dashboard</span>
                         </div>
-                        <h2 className="text-2xl font-black text-foreground flex items-center gap-2 mt-1 leading-none">
-                            <Building2 className="w-6 h-6 text-indigo-400" />
-                            {agency.name}
+                        <h2 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2 mt-1 leading-none">
+                            <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400 flex-shrink-0" />
+                            <span className="truncate">{agency.name}</span>
                         </h2>
                     </div>
                 </div>
-                <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl p-4 border border-slate-800 text-right min-w-[200px] shadow-md">
+                <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl p-3 sm:p-4 border border-slate-800 text-right w-full sm:w-auto sm:min-w-[180px] shadow-md">
                     <span className="text-[10px] font-bold text-indigo-300 block uppercase tracking-wider">Outstanding Balance Owed</span>
-                    <span className="text-2xl font-mono font-bold text-amber-400 mt-1 block">
+                    <span className="text-xl sm:text-2xl font-mono font-bold text-amber-400 mt-1 block">
                         Rs {agency.current_balance.toLocaleString()}
                     </span>
                 </div>
             </div>
 
             {/* Premium Dynamic Performance Summary cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
                 <div className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition xl:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Catalog</span>
@@ -390,35 +408,35 @@ export default function AgencyLedger() {
             </div>
 
             {/* Custom Interactive Tab Controls */}
-            <div className="flex justify-between items-center border-b border-border pb-px">
-                <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border pb-px gap-2">
+                <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>
                     <button onClick={() => setActiveTab('products')}
-                        className={`pb-3 text-sm font-bold border-b-2 px-4 transition ${activeTab === 'products' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-                        📦 Products &amp; Prices Catalog
+                        className={`pb-3 text-xs sm:text-sm font-bold border-b-2 px-2 sm:px-4 transition whitespace-nowrap flex-shrink-0 ${activeTab === 'products' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+                        📦 Products &amp; Prices
                     </button>
                     <button onClick={() => setActiveTab('ledger')}
-                        className={`pb-3 text-sm font-bold border-b-2 px-4 transition ${activeTab === 'ledger' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-                        📖 Ledger &amp; Financial Statements
+                        className={`pb-3 text-xs sm:text-sm font-bold border-b-2 px-2 sm:px-4 transition whitespace-nowrap flex-shrink-0 ${activeTab === 'ledger' ? 'border-indigo-500 text-indigo-400 font-black' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+                        📖 Ledger &amp; Statements
                     </button>
                 </div>
                 {activeTab === 'ledger' && (
-                    <div className="mb-2 flex gap-2 items-center">
-                        <button onClick={() => setPaymentModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center">
-                            <Plus className="w-3.5 h-3.5" /> Record Payment to Agency
+                    <div className="mb-2 flex flex-wrap gap-1.5 items-center">
+                        <button onClick={() => setPaymentModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center whitespace-nowrap">
+                            <Plus className="w-3.5 h-3.5" /> Record Payment
                         </button>
                         <button
                             onClick={() => { setOpeningBalValue((agency.opening_balance ?? 0).toString()); setOpeningBalModal(true); }}
-                            title="Edit opening/previous balance owed to agency"
-                            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 font-bold px-4 py-2 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center"
+                            title="Edit opening balance"
+                            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center whitespace-nowrap"
                         >
-                            <BookOpen className="w-3.5 h-3.5" /> Edit Opening Balance
+                            <BookOpen className="w-3.5 h-3.5" /> Opening Balance
                         </button>
                         <button
                             onClick={() => setClearLedgerConfirm(true)}
-                            title="Clear all ledger records for this agency"
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-4 py-2 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center"
+                            title="Clear all ledger records"
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition flex gap-1.5 items-center whitespace-nowrap"
                         >
-                            <RotateCcw className="w-3.5 h-3.5" /> Clear Ledger Records
+                            <RotateCcw className="w-3.5 h-3.5" /> Clear Records
                         </button>
                     </div>
                 )}
@@ -428,13 +446,24 @@ export default function AgencyLedger() {
             {activeTab === 'products' && (
                 <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
                     <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20">
-                        <div>
-                            <h3 className="font-bold text-foreground text-sm">Product Valuation &amp; Landed Price Metrics</h3>
-                            <p className="text-xs text-muted-foreground">Live calculator breaking down carton landing expenses, FBR taxes, profit margins, and inventory asset values.</p>
-                        </div>
+                            <div>
+                                <h3 className="font-bold text-foreground text-sm">Product Valuation, Profit &amp; Landed Price Metrics</h3>
+                                <p className="text-xs text-muted-foreground">Live calculator showing landed cost, margins, and actual profit earned from sales per product.</p>
+                            </div>
+                            {/* Total profit from sales badge */}
+                            {productLandingStats.length > 0 && (
+                                <div className="flex-shrink-0 text-right">
+                                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Total Agency Profit</span>
+                                    <span className={`text-xl font-black font-mono ${
+                                        productLandingStats.reduce((s, p) => s + p.profitFromSales, 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                    }`}>
+                                        Rs {productLandingStats.reduce((s, p) => s + p.profitFromSales, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    </span>
+                                </div>
+                            )}
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse min-w-[1200px]">
+                        <table className="w-full text-left text-xs border-collapse min-w-[1350px]">
                             <thead>
                                 <tr className="bg-muted/50 text-muted-foreground font-bold uppercase tracking-wider text-[10px] border-b border-border">
                                     <th className="px-5 py-3.5">Product Name</th>
@@ -447,6 +476,8 @@ export default function AgencyLedger() {
                                     <th className="px-4 py-3.5 text-center">Margin %</th>
                                     <th className="px-4 py-3.5 text-right">Profit / Carton</th>
                                     <th className="px-4 py-3.5 text-center">Stock</th>
+                                    <th className="px-4 py-3.5 text-center">Units Sold</th>
+                                    <th className="px-4 py-3.5 text-right font-extrabold text-emerald-400">Profit from Sales</th>
                                     <th className="px-4 py-3.5 text-right font-extrabold text-foreground">Total Asset Value</th>
                                     <th className="px-5 py-3.5 text-center">Actions</th>
                                 </tr>
@@ -478,6 +509,24 @@ export default function AgencyLedger() {
                                                 {p.current_stock}
                                             </span>
                                         </td>
+                                        {/* Units Sold */}
+                                        <td className="px-4 py-4 text-center font-mono text-muted-foreground">
+                                            {p.unitsSold > 0 ? (
+                                                <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-bold">{p.unitsSold}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground/40 text-[10px]">—</span>
+                                            )}
+                                        </td>
+                                        {/* Profit from Sales */}
+                                        <td className="px-4 py-4 text-right font-mono font-extrabold">
+                                            {p.unitsSold > 0 ? (
+                                                <span className={p.profitFromSales >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                                    Rs {p.profitFromSales.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted-foreground/40 text-[10px]">Not sold yet</span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-4 text-right font-mono font-extrabold text-foreground">Rs {p.totalStockValueLanded.toLocaleString()}</td>
                                         <td className="px-5 py-4 whitespace-nowrap text-center">
                                             <div className="flex gap-2 justify-center">
@@ -494,6 +543,21 @@ export default function AgencyLedger() {
                                     </tr>
                                 ))}
                             </tbody>
+                            {/* Agency total profit footer */}
+                            {productLandingStats.length > 0 && (() => {
+                                const totalSalesProfit = productLandingStats.reduce((s, p) => s + p.profitFromSales, 0);
+                                return (
+                                    <tfoot>
+                                        <tr className="bg-emerald-950/40 border-t-2 border-emerald-500/30">
+                                            <td colSpan={11} className="px-5 py-3 text-right text-xs font-bold text-emerald-400 uppercase tracking-wider">Total Profit from All Sales</td>
+                                            <td className={`px-4 py-3 text-right font-mono font-black text-base ${totalSalesProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                Rs {totalSalesProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                            </td>
+                                            <td colSpan={2} />
+                                        </tr>
+                                    </tfoot>
+                                );
+                            })()}
                         </table>
                     </div>
                 </div>

@@ -194,27 +194,27 @@ export default function Invoices() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card p-6 rounded-2xl shadow-sm border border-border">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-card p-4 sm:p-6 rounded-2xl shadow-sm border border-border">
                 <div>
-                    <h2 className="text-2xl font-extrabold text-[#101828] dark:text-white">Cash Memos (Invoices)</h2>
-                    <p className="text-muted-foreground text-sm">Generate, view, and print sales invoices</p>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#101828]">Cash Memos (Invoices)</h2>
+                    <p className="text-muted-foreground text-sm mt-0.5">Generate, view, and print sales invoices</p>
                 </div>
-                <button onClick={() => setModalOpen(true)} className="text-white px-4 py-2 rounded-xl font-bold transition flex gap-2 items-center text-sm" style={{background:'#7F56D9',boxShadow:'0 1px 3px rgba(127,86,217,0.3)'}}>
-                    <Receipt className="w-4 h-4" /> Generate Cash Memo
+                <button onClick={() => setModalOpen(true)} className="self-start sm:self-auto text-white px-4 py-2 rounded-xl font-bold transition flex gap-2 items-center text-sm whitespace-nowrap" style={{background:'#7F56D9',boxShadow:'0 1px 3px rgba(127,86,217,0.3)'}}>
+                    <Receipt className="w-4 h-4 flex-shrink-0" /> Generate Cash Memo
                 </button>
             </div>
 
             {/* ── Search & Month Filter Bar ── */}
-            <div className="bg-card rounded-2xl border border-border shadow-sm p-4 space-y-3">
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-3 sm:p-4 space-y-3">
                 {/* Search row */}
-                <div className="flex gap-3 items-center">
+                <div className="flex gap-2 sm:gap-3 items-center">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search by shopkeeper name…"
+                            placeholder="Search by shopkeeper…"
                             className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40"
                         />
                         {searchQuery && (
@@ -227,18 +227,18 @@ export default function Invoices() {
                     <select
                         value={selectedYear}
                         onChange={e => setSelectedYear(Number(e.target.value))}
-                        className="bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40 font-medium"
+                        className="bg-background border border-border rounded-xl px-2 sm:px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#7F56D9]/40 font-medium flex-shrink-0"
                     >
                         {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
 
-                {/* Month filter pills */}
-                <div className="flex items-center gap-2 flex-wrap">
+                {/* Month filter pills — horizontal scroll on mobile */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{scrollbarWidth:'none'}}>
                     <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <button
                         onClick={() => setSelectedMonth(null)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedMonth === null ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${selectedMonth === null ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
                     >
                         All Months
                     </button>
@@ -246,7 +246,7 @@ export default function Invoices() {
                         <button
                             key={month}
                             onClick={() => setSelectedMonth(selectedMonth === idx ? null : idx)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedMonth === idx ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${selectedMonth === idx ? 'bg-[#7F56D9] text-white border-[#7F56D9]' : 'bg-transparent text-muted-foreground border-border hover:border-[#7F56D9]/40'}`}
                         >
                             {month}
                         </button>
@@ -255,7 +255,7 @@ export default function Invoices() {
 
                 {/* Active filter summary */}
                 {(searchQuery || selectedMonth !== null) && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <span>Showing <strong className="text-foreground">{filteredInvoices.length}</strong> of <strong className="text-foreground">{invoices.length}</strong> invoices</span>
                         {searchQuery && <span className="bg-muted px-2 py-0.5 rounded-full">"{searchQuery}"</span>}
                         {selectedMonth !== null && <span className="bg-muted px-2 py-0.5 rounded-full">{MONTHS[selectedMonth]} {selectedYear}</span>}
@@ -382,7 +382,7 @@ export default function Invoices() {
 
                             <div className="border-t border-border pt-4 flex justify-between items-center text-sm font-bold bg-muted/40 p-4 rounded-xl">
                                 <span className="text-[#475467] dark:text-slate-300">Grand Total Amount</span>
-                                <span className="text-lg font-extrabold text-[#5f69e1] font-mono">Rs {viewInvoice.total_amount.toLocaleString()}</span>
+                                <span className="text-lg font-extrabold text-[#181D27] font-mono">Rs {viewInvoice.total_amount.toLocaleString()}</span>
                             </div>
                         </div>
                         <div className="p-4 border-t border-border flex justify-end gap-3 bg-muted/20">
@@ -459,8 +459,8 @@ export default function Invoices() {
 
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-2">Add Item</label>
-                                <div className="flex gap-2 items-start">
-                                    <div className="flex-1">
+                                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+                                    <div className="flex-1 w-full sm:w-auto">
                                         <SearchableSelect
                                             options={products.map(p => ({ value: p.id, label: p.name, sub: `Rs ${p.default_price} · Stock: ${p.current_stock}` }))}
                                             value={selectedProduct}
@@ -469,23 +469,25 @@ export default function Invoices() {
                                             accentColor="emerald"
                                         />
                                     </div>
-                                    <div className="relative w-28">
-                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">Rs</span>
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        <div className="relative flex-1 sm:w-28">
+                                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">Rs</span>
+                                            <input
+                                                type="number"
+                                                placeholder="Rate"
+                                                value={customPrice}
+                                                onChange={e => setCustomPrice(e.target.value)}
+                                                className="w-full bg-muted/30 border border-border rounded-lg pl-8 pr-2 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground"
+                                            />
+                                        </div>
                                         <input
                                             type="number"
-                                            placeholder="Rate"
-                                            value={customPrice}
-                                            onChange={e => setCustomPrice(e.target.value)}
-                                            className="w-full bg-muted/30 border border-border rounded-lg pl-8 pr-2 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground"
+                                            placeholder="Qty"
+                                            value={qty}
+                                            onChange={e => setQty(e.target.value)}
+                                            className="w-20 bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground"
                                         />
                                     </div>
-                                    <input
-                                        type="number"
-                                        placeholder="Qty"
-                                        value={qty}
-                                        onChange={e => setQty(e.target.value)}
-                                        className="w-20 bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-foreground"
-                                    />
                                 </div>
 
                                 {selectedProd && previewQty > 0 && previewPrice > 0 && (

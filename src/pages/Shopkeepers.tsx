@@ -191,12 +191,12 @@ export default function Shopkeepers() {
                         <h2 className="text-2xl font-bold text-foreground">Shopkeepers</h2>
                         <p className="text-muted-foreground text-sm mt-0.5">Manage customers and view their ledgers</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={exportPendingBills} className="border border-border hover:bg-muted text-foreground px-3 py-2 rounded-lg font-medium flex gap-2 items-center text-sm transition bg-card">
-                            <Download className="w-4 h-4" /> Export Pending
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={exportPendingBills} className="border border-border hover:bg-muted text-foreground px-3 py-2 rounded-lg font-medium flex gap-2 items-center text-sm transition bg-card whitespace-nowrap">
+                            <Download className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Export Pending</span><span className="sm:hidden">Export</span>
                         </button>
-                        <button onClick={openAdd} className="text-white px-4 py-2 rounded-lg font-semibold flex gap-2 items-center text-sm transition" style={{ background: '#7F56D9', boxShadow: '0 1px 4px rgba(127,86,217,0.35)' }}>
-                            <Plus className="w-4 h-4" /> Add Shopkeeper
+                        <button onClick={openAdd} className="text-white px-4 py-2 rounded-lg font-semibold flex gap-2 items-center text-sm transition whitespace-nowrap" style={{ background: '#7F56D9', boxShadow: '0 1px 4px rgba(127,86,217,0.35)' }}>
+                            <Plus className="w-4 h-4 flex-shrink-0" /> Add Shopkeeper
                         </button>
                     </div>
                 </div>
@@ -313,7 +313,7 @@ export default function Shopkeepers() {
             {shopkeepers.length > 0 && (
                 <div className="flex gap-3">
                     {/* ── Card grid ────────────────────────────────────────── */}
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 min-w-0">
                         {filtered.map(s => {
                             const [bgCol, textCol] = avatarColor(s.name);
                             const hasPending = s.current_balance > 0;
@@ -410,7 +410,7 @@ export default function Shopkeepers() {
 
                     {/* ── Alphabet Scroll Sidebar ───────────────────────────── */}
                     {shopkeepers.length > 0 && (
-                        <div className="flex-shrink-0 w-8 flex flex-col gap-0.5 sticky top-4 self-start max-h-[80vh] overflow-y-auto py-1">
+                        <div className="hidden sm:flex flex-shrink-0 w-8 flex-col gap-0.5 sticky top-4 self-start max-h-[80vh] overflow-y-auto py-1">
                             {ALPHABET.map(letter => {
                                 const hasEntries = availableLetters.has(letter);
                                 const isActive = alphabetFilter === letter;

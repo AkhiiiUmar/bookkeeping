@@ -188,69 +188,67 @@ export default function Layout() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Global Top Navbar */}
-                <header className="bg-white border-b border-slate-100 px-4 md:px-8 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                <header className="bg-white border-b border-slate-100 px-3 sm:px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                         <button 
                             onClick={() => setIsMobileOpen(true)}
-                            className="p-2 -ml-2 text-slate-400 hover:text-slate-700 md:hidden rounded-lg hover:bg-slate-50"
+                            className="p-2 -ml-1 text-slate-400 hover:text-slate-700 md:hidden rounded-lg hover:bg-slate-50 flex-shrink-0"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <div>
+                        <div className="min-w-0">
                             <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider hidden md:inline">Workspace</span>
-                            <h3 className="text-base font-bold text-slate-800 capitalize flex items-center gap-1.5 mt-0.5 md:mt-0">
-                                {location.pathname === '/' ? 'Dashboard' : location.pathname.substring(1).replace('-', ' ')}
+                            <h3 className="text-sm md:text-base font-bold text-slate-800 capitalize flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-xs md:max-w-none">
+                                {location.pathname === '/' ? 'Dashboard' : location.pathname.substring(1).replace(/-/g, ' ')}
                             </h3>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-1.5 md:gap-4 flex-shrink-0">
                         {/* Network Status Indicator */}
                         <div className="flex items-center">
                             {!isOnline ? (
-                                <div className="flex items-center gap-1 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[10px] md:text-xs font-bold">
-                                    <WifiOff className="w-3 md:w-3.5 h-3 md:h-3.5" />
+                                <div className="flex items-center gap-1 px-2 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[10px] font-bold">
+                                    <WifiOff className="w-3 h-3 flex-shrink-0" />
                                     <span className="hidden sm:inline">Offline</span>
                                     {offlineQueue.length > 0 && (
-                                        <span className="ml-1 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[9px] md:text-[10px]">
+                                        <span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[9px]">
                                             {offlineQueue.length}
                                         </span>
                                     )}
                                 </div>
                             ) : offlineQueue.length > 0 ? (
                                 <div className="relative flex items-center gap-1" ref={syncErrorRef}>
-                                    {/* Main badge — click to open info popover */}
                                     <button
                                         onClick={() => setShowSyncError(v => !v)}
-                                        className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-colors ${
+                                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors ${
                                             lastSyncError
                                                 ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
                                                 : 'bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100'
                                         }`}
                                     >
                                         {isSyncing
-                                            ? <Loader2 className="w-3 md:w-3.5 h-3 md:h-3.5 animate-spin" />
+                                            ? <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
                                             : lastSyncError
-                                                ? <AlertTriangle className="w-3 md:w-3.5 h-3 md:h-3.5" />
-                                                : <Loader2 className="w-3 md:w-3.5 h-3 md:h-3.5 animate-spin" />
+                                                ? <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                                                : <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
                                         }
-                                        <span>{lastSyncError ? 'Sync Failed' : 'Syncing...'} ({offlineQueue.length})</span>
+                                        <span className="hidden sm:inline">{lastSyncError ? 'Sync Failed' : 'Syncing...'} ({offlineQueue.length})</span>
+                                        <span className="sm:hidden">{offlineQueue.length}</span>
                                     </button>
 
-                                    {/* Direct ✕ discard button — always visible, clears immediately */}
                                     <button
                                         onClick={(e) => { e.stopPropagation(); clearSyncQueue(); setShowSyncError(false); }}
-                                        title="Discard stuck sync items (your local data is kept)"
+                                        title="Discard stuck sync items"
                                         className="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-700 transition-colors flex-shrink-0"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
 
-                                    {/* Info popover */}
                                     {showSyncError && (
-                                        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-red-200 rounded-xl shadow-xl z-50 p-4">
+                                        <div className="absolute right-0 top-full mt-2 w-72 md:w-80 bg-white border border-red-200 rounded-xl shadow-xl z-50 p-4">
                                             <div className="flex items-start gap-2 mb-3">
                                                 <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                                                 <div className="flex-1 min-w-0">
@@ -282,18 +280,18 @@ export default function Layout() {
                                     )}
                                 </div>
                             ) : (
-                                 <div className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 text-slate-400 text-[10px] md:text-xs font-medium">
-                                    <Wifi className="w-3 md:w-3.5 h-3 md:h-3.5" />
+                                 <div className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-slate-400 text-[10px] font-medium">
+                                    <Wifi className="w-3 h-3" />
                                     <span className="hidden sm:inline">Online</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="w-px h-6 bg-slate-200 mx-0.5 md:mx-1"></div>
+                        <div className="w-px h-6 bg-slate-200"></div>
 
-                        <button title="Notifications" className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors relative">
+                        <button title="Notifications" className="p-1.5 md:p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors relative">
                             <Bell className="w-4 md:w-5 h-4 md:h-5" />
-                            <span className="absolute top-1.5 right-1.5 w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-red-500 animate-pulse" />
+                            <span className="absolute top-1 right-1 md:top-1.5 md:right-1.5 w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-red-500 animate-pulse" />
                         </button>
                         <button title="Help & Documentation" className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors hidden sm:block">
                             <HelpCircle className="w-5 h-5" />
@@ -303,7 +301,7 @@ export default function Layout() {
 
                 {/* Dynamic Page Container */}
                 <div className="flex-1 overflow-auto" style={{background:'#F5F5F5'}}>
-                    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+                    <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6">
                         <Outlet />
                     </div>
                 </div>
